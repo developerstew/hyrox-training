@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYROX Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            background: linear-gradient(135deg, #f5c842, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 0.6rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #555;
+        }
+
+        /* Week Navigation */
+        .week-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .week-nav button {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .week-nav button:hover { border-color: #f5c842; color: #f5c842; }
+
+        .week-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #aaa;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .week-label .current-badge {
+            font-size: 0.5rem;
+            background: rgba(245, 200, 66, 0.15);
+            color: #f5c842;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            background: #141414;
+            border: 1px solid #222;
+            color: #666;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { border-color: #444; color: #aaa; }
+        .tab.active { border-color: #f5c842; color: #f5c842; background: rgba(245, 200, 66, 0.05); }
+
+        .tab .completion {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-left: 6px;
+            background: #333;
+        }
+
+        .tab .completion.done { background: #34d399; }
+        .tab .completion.partial { background: #f5c842; }
+
+        /* Day Panel */
+        .day-panel {
+            display: none;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .day-panel.active { display: block; }
+
+        .day-title {
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .day-tags {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .day-tag {
+            font-size: 0.5rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .tag-strength { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .tag-stations { background: rgba(245, 200, 66, 0.15); color: #f5c842; }
+        .tag-recovery { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+        .tag-run { background: rgba(255, 107, 53, 0.15); color: #ff6b35; }
+        .tag-rest { background: rgba(148, 163, 184, 0.1); color: #64748b; }
+        .tag-speed { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+
+        /* Session Card */
+        .session-card {
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .session-card.completed { border-color: rgba(52, 211, 153, 0.3); }
+
+        .session-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .session-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .session-check:hover { border-color: #34d399; }
+        .session-check.checked { background: #34d399; border-color: #34d399; }
+        .session-check.checked::after { content: '✓'; color: #0a0a0a; font-size: 0.7rem; font-weight: 700; }
+
+        .session-info { flex: 1; }
+
+        .session-time-label {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #555;
+        }
+
+        .session-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ccc;
+        }
+
+        .session-desc {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Log Fields */
+        .log-fields {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .log-field {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .log-field label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .log-field input, .log-field textarea {
+            background: #1e1e1e;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .log-field input:focus, .log-field textarea:focus {
+            border-color: #f5c842;
+        }
+
+        .log-field input::placeholder, .log-field textarea::placeholder {
+            color: #444;
+        }
+
+        .notes-field {
+            grid-column: 1 / -1;
+        }
+
+        .notes-field textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 40px;
+        }
+
+        /* Station pills in log */
+        .station-log {
+            margin-top: 12px;
+        }
+
+        .station-log-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .station-log-item:last-child { border-bottom: none; }
+
+        .station-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #888;
+            min-width: 140px;
+        }
+
+        .station-label .spec {
+            color: #555;
+            font-size: 0.55rem;
+            font-weight: 600;
+            display: block;
+        }
+
+        .station-label.run-label {
+            color: #ff6b35;
+        }
+
+        .station-input {
+            background: #1e1e1e;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-family: inherit;
+            outline: none;
+            width: 90px;
+            transition: border-color 0.2s;
+        }
+
+        .station-input:focus { border-color: #f5c842; }
+        .station-input::placeholder { color: #444; }
+
+        /* History */
+        .history-panel {
+            display: none;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .history-panel.active { display: block; }
+
+        .history-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .history-week {
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .history-week:hover { border-color: #333; }
+
+        .history-week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-week-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .history-completion {
+            font-size: 0.6rem;
+            color: #34d399;
+        }
+
+        .history-days {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .history-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #222;
+        }
+
+        .history-dot.done { background: #34d399; }
+        .history-dot.partial { background: #f5c842; }
+
+        /* Save indicator */
+        .save-indicator {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            font-size: 0.6rem;
+            color: #34d399;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .save-indicator.show { opacity: 1; }
+
+        /* Sync buttons */
+        .sync-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .sync-btn {
+            background: #1e1e1e;
+            border: 1px solid #2a2a2a;
+            color: #666;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .sync-btn:hover { border-color: #f5c842; color: #f5c842; }
+
+        .sync-btn.success { border-color: #34d399; color: #34d399; }
+
+        #importInput { display: none; }
+
+        /* Tips */
+        .tips {
+            max-width: 700px;
+            margin: 16px auto 0;
+            padding: 8px 14px;
+            background: #111;
+            border-radius: 8px;
+            border: 1px solid #1a1a1a;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tip {
+            font-size: 0.55rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tip-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #f5c842;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>HYROX</h1>
+        <div class="subtitle">Training Tracker &middot; Pro Division</div>
+    </div>
+
+    <div class="week-nav">
+        <button onclick="changeWeek(-1)">&larr; Prev</button>
+        <div class="week-label" id="weekLabel"></div>
+        <button onclick="changeWeek(1)">Next &rarr;</button>
+    </div>
+
+    <div class="sync-bar">
+        <button class="sync-btn" onclick="exportData()" id="exportBtn">Export Data</button>
+        <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import Data</button>
+        <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div id="dayPanels"></div>
+
+    <div class="history-panel" id="historyPanel">
+        <div class="history-title">Weekly History</div>
+        <div id="historyList"></div>
+    </div>
+
+    <div class="tips">
+        <div class="tip"><span class="tip-dot"></span>Train sleds heavier than race weight</div>
+        <div class="tip"><span class="tip-dot"></span>Deload every 3-4 weeks</div>
+        <div class="tip"><span class="tip-dot"></span>Full race sim every 4-6 weeks</div>
+        <div class="tip"><span class="tip-dot"></span>80/20 intensity split</div>
+        <div class="tip"><span class="tip-dot"></span>Roxzone transitions &lt;10s</div>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator">Saved</div>
+
+    <script>
+    const PLAN = {
+        monday: {
+            name: 'Monday', tags: ['strength', 'stations'],
+            sessions: [
+                {
+                    id: 'strength', time: 'Morning', name: 'Upper Body Strength Endurance',
+                    desc: '~45 min · Moderate weight, higher reps',
+                    fields: [
+                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
+                    ]
+                },
+                {
+                    id: 'stations', time: 'Lunchtime', name: 'Upper Body Stations',
+                    desc: 'Technique focus, no runs',
+                    stations: [
+                        { id: 'skierg', name: 'SkiErg', spec: '1000m', placeholder: 'e.g. 4:30' },
+                        { id: 'rowerg', name: 'RowErg', spec: '1000m', placeholder: 'e.g. 4:15' },
+                        { id: 'farmer', name: 'Farmer Carries', spec: '200m · 2×32kg', placeholder: 'e.g. 2:00' },
+                        { id: 'wallballs', name: 'Wall Balls', spec: '100 reps · 9kg', placeholder: 'e.g. 8:30' },
+                    ]
+                }
+            ]
+        },
+        tuesday: {
+            name: 'Tuesday', tags: ['strength', 'stations'],
+            sessions: [
+                {
+                    id: 'strength', time: 'Morning', name: 'Lower Body Strength Endurance',
+                    desc: '~45 min · Moderate weight, higher reps',
+                    fields: [
+                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
+                    ]
+                },
+                {
+                    id: 'stations', time: 'Evening', name: 'Lower Body Stations — Compromised',
+                    desc: 'Roxzone transitions <10s',
+                    stations: [
+                        { id: 'run1', name: '1km Run', spec: '', placeholder: 'e.g. 4:20', isRun: true },
+                        { id: 'sledpush', name: 'Sled Push', spec: '50m · 202kg', placeholder: 'e.g. 3:00' },
+                        { id: 'run2', name: '1km Run', spec: '', placeholder: 'e.g. 4:25', isRun: true },
+                        { id: 'sledpull', name: 'Sled Pull', spec: '50m · 153kg', placeholder: 'e.g. 2:30' },
+                        { id: 'run3', name: '1km Run', spec: '', placeholder: 'e.g. 4:30', isRun: true },
+                        { id: 'burpee', name: 'Burpee Broad Jumps', spec: '80m', placeholder: 'e.g. 5:00' },
+                        { id: 'run4', name: '1km Run', spec: '', placeholder: 'e.g. 4:35', isRun: true },
+                        { id: 'lunges', name: 'Sandbag Lunges', spec: '100m · 30kg', placeholder: 'e.g. 6:00' },
+                    ]
+                }
+            ]
+        },
+        wednesday: {
+            name: 'Wednesday', tags: ['recovery'],
+            sessions: [
+                {
+                    id: 'mobility', time: '', name: 'Mobility',
+                    desc: '30 min · Full body',
+                    fields: [{ id: 'duration', label: 'Duration', placeholder: '30 min' }]
+                },
+                {
+                    id: 'rehab', time: '', name: 'Shoulder Rehab',
+                    desc: 'Rehab work',
+                    fields: []
+                },
+                {
+                    id: 'zone2', time: '', name: 'Zone 2 Jog',
+                    desc: '45-60 min · Conversational pace',
+                    fields: [
+                        { id: 'duration', label: 'Duration', placeholder: '50 min' },
+                        { id: 'distance', label: 'Distance', placeholder: '8 km' },
+                        { id: 'pace', label: 'Avg Pace', placeholder: '6:15/km' },
+                    ]
+                },
+                {
+                    id: 'sauna', time: '', name: 'Sauna',
+                    desc: 'Recovery',
+                    fields: [{ id: 'duration', label: 'Duration', placeholder: '15 min' }]
+                }
+            ]
+        },
+        thursday: {
+            name: 'Thursday', tags: ['strength', 'stations'],
+            sessions: [
+                {
+                    id: 'strength', time: 'Morning', name: 'Upper Body Strength Endurance',
+                    desc: '~45 min · Moderate weight, higher reps',
+                    fields: [
+                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
+                    ]
+                },
+                {
+                    id: 'stations', time: 'Lunchtime', name: 'Upper Body Stations — Compromised',
+                    desc: 'Roxzone transitions <10s',
+                    stations: [
+                        { id: 'run1', name: '1km Run', spec: '', placeholder: 'e.g. 4:20', isRun: true },
+                        { id: 'skierg', name: 'SkiErg', spec: '1000m', placeholder: 'e.g. 4:30' },
+                        { id: 'run2', name: '1km Run', spec: '', placeholder: 'e.g. 4:25', isRun: true },
+                        { id: 'rowerg', name: 'RowErg', spec: '1000m', placeholder: 'e.g. 4:15' },
+                        { id: 'run3', name: '1km Run', spec: '', placeholder: 'e.g. 4:30', isRun: true },
+                        { id: 'farmer', name: 'Farmer Carries', spec: '200m · 2×32kg', placeholder: 'e.g. 2:00' },
+                        { id: 'run4', name: '1km Run', spec: '', placeholder: 'e.g. 4:35', isRun: true },
+                        { id: 'wallballs', name: 'Wall Balls', spec: '100 reps · 9kg', placeholder: 'e.g. 8:30' },
+                    ]
+                }
+            ]
+        },
+        friday: {
+            name: 'Friday', tags: ['speed', 'stations'],
+            sessions: [
+                {
+                    id: 'speed', time: 'Morning', name: 'Speed Intervals',
+                    desc: '8x 400m fast, 90s recovery',
+                    fields: [
+                        { id: 'rep1', label: '400m #1', placeholder: 'e.g. 1:35' },
+                        { id: 'rep2', label: '400m #2', placeholder: 'e.g. 1:36' },
+                        { id: 'rep3', label: '400m #3', placeholder: 'e.g. 1:37' },
+                        { id: 'rep4', label: '400m #4', placeholder: 'e.g. 1:38' },
+                        { id: 'rep5', label: '400m #5', placeholder: 'e.g. 1:38' },
+                        { id: 'rep6', label: '400m #6', placeholder: 'e.g. 1:40' },
+                        { id: 'rep7', label: '400m #7', placeholder: 'e.g. 1:41' },
+                        { id: 'rep8', label: '400m #8', placeholder: 'e.g. 1:42' },
+                    ]
+                },
+                {
+                    id: 'stations', time: 'Lunchtime', name: 'Lower Body Stations',
+                    desc: 'No runs — keep legs fresh for Saturday',
+                    stations: [
+                        { id: 'sledpush', name: 'Sled Push', spec: '50m · 202kg', placeholder: 'e.g. 3:00' },
+                        { id: 'sledpull', name: 'Sled Pull', spec: '50m · 153kg', placeholder: 'e.g. 2:30' },
+                        { id: 'burpee', name: 'Burpee Broad Jumps', spec: '80m', placeholder: 'e.g. 5:00' },
+                        { id: 'lunges', name: 'Sandbag Lunges', spec: '100m · 30kg', placeholder: 'e.g. 6:00' },
+                    ]
+                }
+            ]
+        },
+        saturday: {
+            name: 'Saturday', tags: ['run'],
+            sessions: [
+                {
+                    id: 'longrun', time: '', name: 'Long Zone 2 Run',
+                    desc: '45-90 min · Conversational pace',
+                    fields: [
+                        { id: 'duration', label: 'Duration', placeholder: '60 min' },
+                        { id: 'distance', label: 'Distance', placeholder: '10 km' },
+                        { id: 'pace', label: 'Avg Pace', placeholder: '6:00/km' },
+                        { id: 'avghr', label: 'Avg HR', placeholder: '140 bpm' },
+                    ]
+                }
+            ]
+        },
+        sunday: {
+            name: 'Sunday', tags: ['rest'],
+            sessions: [
+                {
+                    id: 'rest', time: '', name: 'Full Rest Day',
+                    desc: 'Recovery',
+                    fields: []
+                }
+            ]
+        }
+    };
+
+    const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const TAG_CLASSES = { strength:'tag-strength', stations:'tag-stations', recovery:'tag-recovery', run:'tag-run', rest:'tag-rest', speed:'tag-speed' };
+
+    let currentWeek = getWeekId(new Date());
+    let activeDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+    let data = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
+    let showHistory = false;
+
+    function getWeekId(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        const yyyy = monday.getFullYear();
+        const mm = String(monday.getMonth() + 1).padStart(2, '0');
+        const dd = String(monday.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function getWeekDisplay(weekId) {
+        const d = new Date(weekId + 'T00:00:00');
+        const end = new Date(d);
+        end.setDate(end.getDate() + 6);
+        const opts = { day: 'numeric', month: 'short' };
+        return `${d.toLocaleDateString('en-GB', opts)} — ${end.toLocaleDateString('en-GB', opts)}`;
+    }
+
+    function isCurrentWeek(weekId) {
+        return weekId === getWeekId(new Date());
+    }
+
+    function changeWeek(dir) {
+        const d = new Date(currentWeek + 'T00:00:00');
+        d.setDate(d.getDate() + dir * 7);
+        currentWeek = getWeekId(d);
+        render();
+    }
+
+    function getSessionData(day, sessionId) {
+        if (!data[currentWeek]) return {};
+        if (!data[currentWeek][day]) return {};
+        return data[currentWeek][day][sessionId] || {};
+    }
+
+    function setSessionData(day, sessionId, key, value) {
+        if (!data[currentWeek]) data[currentWeek] = {};
+        if (!data[currentWeek][day]) data[currentWeek][day] = {};
+        if (!data[currentWeek][day][sessionId]) data[currentWeek][day][sessionId] = {};
+        data[currentWeek][day][sessionId][key] = value;
+        save();
+    }
+
+    function save() {
+        localStorage.setItem('hyrox-data', JSON.stringify(data));
+        const el = document.getElementById('saveIndicator');
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 1200);
+        updateTabs();
+    }
+
+    function isSessionCompleted(day, sessionId) {
+        const d = getSessionData(day, sessionId);
+        return d.completed === true;
+    }
+
+    function getDayCompletion(day) {
+        const plan = PLAN[day];
+        const total = plan.sessions.length;
+        let done = 0;
+        plan.sessions.forEach(s => { if (isSessionCompleted(day, s.id)) done++; });
+        if (done === 0) return 'none';
+        if (done === total) return 'done';
+        return 'partial';
+    }
+
+    function toggleComplete(day, sessionId) {
+        const current = isSessionCompleted(day, sessionId);
+        setSessionData(day, sessionId, 'completed', !current);
+        render();
+    }
+
+    function onInput(day, sessionId, key, value) {
+        setSessionData(day, sessionId, key, value);
+    }
+
+    function updateTabs() {
+        DAYS.forEach(day => {
+            const dot = document.querySelector(`.tab[data-day="${day}"] .completion`);
+            if (dot) {
+                const comp = getDayCompletion(day);
+                dot.className = 'completion' + (comp !== 'none' ? ' ' + comp : '');
+            }
+        });
+    }
+
+    function render() {
+        // Week label
+        const weekLabel = document.getElementById('weekLabel');
+        weekLabel.innerHTML = getWeekDisplay(currentWeek) +
+            (isCurrentWeek(currentWeek) ? '<span class="current-badge">Current</span>' : '');
+
+        // Tabs
+        const tabsEl = document.getElementById('tabs');
+        tabsEl.innerHTML = DAYS.map(day => {
+            const plan = PLAN[day];
+            const comp = getDayCompletion(day);
+            return `<div class="tab ${day === activeDay && !showHistory ? 'active' : ''}" data-day="${day}" onclick="selectDay('${day}')">
+                ${plan.name}
+                <span class="completion ${comp !== 'none' ? comp : ''}"></span>
+            </div>`;
+        }).join('') + `<div class="tab ${showHistory ? 'active' : ''}" onclick="toggleHistory()">History</div>`;
+
+        // Day panels
+        const panelsEl = document.getElementById('dayPanels');
+        panelsEl.innerHTML = DAYS.map(day => {
+            const plan = PLAN[day];
+            const isActive = day === activeDay && !showHistory;
+            return `<div class="day-panel ${isActive ? 'active' : ''}" data-day="${day}">
+                <div class="day-title">${plan.name}</div>
+                <div class="day-tags">${plan.tags.map(t => `<span class="day-tag ${TAG_CLASSES[t]}">${t}</span>`).join('')}</div>
+                ${plan.sessions.map(session => renderSession(day, session)).join('')}
+            </div>`;
+        }).join('');
+
+        // History
+        const historyPanel = document.getElementById('historyPanel');
+        historyPanel.className = 'history-panel' + (showHistory ? ' active' : '');
+        if (showHistory) renderHistory();
+    }
+
+    function renderSession(day, session) {
+        const sData = getSessionData(day, session.id);
+        const completed = sData.completed === true;
+        const checkClass = completed ? 'session-check checked' : 'session-check';
+
+        let fieldsHtml = '';
+
+        if (session.stations) {
+            fieldsHtml = `<div class="station-log">
+                ${session.stations.map(st => {
+                    const val = sData[st.id] || '';
+                    return `<div class="station-log-item">
+                        <div class="station-label ${st.isRun ? 'run-label' : ''}">
+                            ${st.name}
+                            ${st.spec ? `<span class="spec">${st.spec}</span>` : ''}
+                        </div>
+                        <input class="station-input" type="text" placeholder="${st.placeholder}" value="${val}"
+                            oninput="onInput('${day}','${session.id}','${st.id}',this.value)">
+                    </div>`;
+                }).join('')}
+            </div>`;
+        } else if (session.fields && session.fields.length > 0) {
+            fieldsHtml = `<div class="log-fields">
+                ${session.fields.map(f => {
+                    const val = sData[f.id] || '';
+                    return `<div class="log-field">
+                        <label>${f.label}</label>
+                        <input type="text" placeholder="${f.placeholder}" value="${val}"
+                            oninput="onInput('${day}','${session.id}','${f.id}',this.value)">
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        // Notes field for every session
+        const notes = sData.notes || '';
+        const notesHtml = `<div class="log-fields"><div class="log-field notes-field">
+            <label>Notes</label>
+            <textarea placeholder="How did it feel?" oninput="onInput('${day}','${session.id}','notes',this.value)">${notes}</textarea>
+        </div></div>`;
+
+        return `<div class="session-card ${completed ? 'completed' : ''}">
+            <div class="session-header">
+                <div class="${checkClass}" onclick="toggleComplete('${day}','${session.id}')"></div>
+                <div class="session-info">
+                    ${session.time ? `<div class="session-time-label">${session.time}</div>` : ''}
+                    <div class="session-name">${session.name}</div>
+                    <div class="session-desc">${session.desc}</div>
+                </div>
+            </div>
+            ${fieldsHtml}
+            ${notesHtml}
+        </div>`;
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        const weeks = Object.keys(data).sort().reverse();
+
+        if (weeks.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:#444;font-size:0.75rem;padding:40px 0;">No data yet. Start logging!</div>';
+            return;
+        }
+
+        list.innerHTML = weeks.map(weekId => {
+            const weekData = data[weekId];
+            const dots = DAYS.map(day => {
+                if (!weekData[day]) return '<div class="history-dot"></div>';
+                const plan = PLAN[day];
+                const total = plan.sessions.length;
+                let done = 0;
+                plan.sessions.forEach(s => {
+                    if (weekData[day][s.id] && weekData[day][s.id].completed) done++;
+                });
+                const cls = done === total ? 'done' : done > 0 ? 'partial' : '';
+                return `<div class="history-dot ${cls}"></div>`;
+            }).join('');
+
+            const totalSessions = DAYS.reduce((sum, d) => sum + PLAN[d].sessions.length, 0);
+            let completedSessions = 0;
+            DAYS.forEach(day => {
+                if (weekData[day]) {
+                    PLAN[day].sessions.forEach(s => {
+                        if (weekData[day][s.id] && weekData[day][s.id].completed) completedSessions++;
+                    });
+                }
+            });
+
+            return `<div class="history-week" onclick="jumpToWeek('${weekId}')">
+                <div class="history-week-header">
+                    <div class="history-week-label">${getWeekDisplay(weekId)}${isCurrentWeek(weekId) ? ' <span style="color:#f5c842;font-size:0.5rem;">CURRENT</span>' : ''}</div>
+                    <div class="history-completion">${completedSessions}/${totalSessions} sessions</div>
+                </div>
+                <div class="history-days">${dots}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function selectDay(day) {
+        activeDay = day;
+        showHistory = false;
+        render();
+    }
+
+    function toggleHistory() {
+        showHistory = !showHistory;
+        render();
+    }
+
+    function jumpToWeek(weekId) {
+        currentWeek = weekId;
+        showHistory = false;
+        render();
+    }
+
+    function exportData() {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hyrox-data-${currentWeek}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        const btn = document.getElementById('exportBtn');
+        btn.classList.add('success');
+        btn.textContent = 'Exported!';
+        setTimeout(() => { btn.classList.remove('success'); btn.textContent = 'Export Data'; }, 2000);
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                // Merge imported data with existing (imported wins on conflicts)
+                Object.keys(imported).forEach(weekId => {
+                    if (!data[weekId]) {
+                        data[weekId] = imported[weekId];
+                    } else {
+                        Object.keys(imported[weekId]).forEach(day => {
+                            if (!data[weekId][day]) {
+                                data[weekId][day] = imported[weekId][day];
+                            } else {
+                                Object.keys(imported[weekId][day]).forEach(session => {
+                                    data[weekId][day][session] = imported[weekId][day][session];
+                                });
+                            }
+                        });
+                    }
+                });
+                save();
+                render();
+                alert('Data imported successfully!');
+            } catch (err) {
+                alert('Invalid file. Please select a valid HYROX data export.');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // Init
+    render();
+    </script>
+</body>
+</html>
