@@ -315,6 +315,25 @@
         .station-input:focus { border-color: #f5c842; }
         .station-input::placeholder { color: #444; }
 
+        /* Previous value badge */
+        .prev-val {
+            font-size: 0.5rem;
+            color: #f5c842;
+            opacity: 0.6;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .station-log-item .prev-val {
+            margin-left: auto;
+            margin-right: 4px;
+        }
+
+        .log-field .prev-val {
+            display: block;
+            margin-top: 1px;
+        }
+
         /* History */
         .history-panel {
             display: none;
@@ -484,6 +503,69 @@
             border-radius: 50%;
             background: #f5c842;
             flex-shrink: 0;
+        }
+
+        /* ==================== */
+        /* MOBILE RESPONSIVE    */
+        /* ==================== */
+        @media (max-width: 600px) {
+            body { padding: 12px 10px; }
+
+            h1 { font-size: 1.3rem; letter-spacing: 4px; }
+
+            .week-nav { gap: 8px; margin-bottom: 12px; }
+            .week-nav button { padding: 8px 12px; font-size: 0.7rem; }
+            .week-label { font-size: 0.7rem; min-width: 140px; }
+
+            .tabs {
+                gap: 3px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .tab {
+                padding: 10px 12px;
+                font-size: 0.6rem;
+                flex-shrink: 0;
+                letter-spacing: 0.5px;
+            }
+
+            .division-bar { gap: 3px; flex-wrap: wrap; }
+            .div-btn { padding: 8px 10px; font-size: 0.55rem; }
+
+            .sync-bar { gap: 6px; }
+            .sync-btn { padding: 8px 12px; font-size: 0.55rem; }
+
+            .day-panel { max-width: 100%; }
+
+            .session-card { padding: 14px 12px; }
+            .session-name { font-size: 0.8rem; }
+
+            .log-fields {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 6px;
+            }
+            .log-field input, .log-field textarea {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+
+            .station-log-item { gap: 6px; padding: 10px 0; }
+            .station-label { min-width: 100px; font-size: 0.65rem; }
+            .station-input {
+                width: 80px;
+                padding: 8px 6px;
+                font-size: 0.75rem;
+            }
+
+            .tips { padding: 6px 10px; gap: 10px; }
+            .tip { font-size: 0.5rem; }
+
+            .setup-card { padding: 24px 20px; }
+            .setup-field input { padding: 12px 14px; font-size: 0.85rem; }
+            .setup-btn { padding: 14px; font-size: 0.8rem; }
         }
 
         /* ==================== */
@@ -1294,6 +1376,7 @@
     function renderSession(day, session) {
         const sData = getSessionData(day, session.id);
         const completed = sData.completed === true;
+        const prev = getPrevSessionData(day, session.id);
 
         let fieldsHtml = '';
 
@@ -1302,11 +1385,13 @@
                 session.stations.map(st => {
                     const val = sData[st.id] || '';
                     const spec = st.isRun ? '' : getSpec(st.id);
+                    const pv = prev ? prev[st.id] : null;
                     return '<div class="station-log-item">' +
                         '<div class="station-label ' + (st.isRun ? 'run-label' : '') + '">' +
                             st.name +
                             (spec ? '<span class="spec">' + spec + '</span>' : '') +
                         '</div>' +
+                        prevBadge(pv) +
                         '<input class="station-input" type="text" placeholder="' + st.placeholder + '" value="' + escHtml(val) + '"' +
                             ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + st.id + '\',this.value)">' +
                     '</div>';
@@ -1316,10 +1401,12 @@
             fieldsHtml = '<div class="log-fields">' +
                 session.fields.map(f => {
                     const val = sData[f.id] || '';
+                    const pv = prev ? prev[f.id] : null;
                     return '<div class="log-field">' +
                         '<label>' + f.label + '</label>' +
                         '<input type="text" placeholder="' + f.placeholder + '" value="' + escHtml(val) + '"' +
                             ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + f.id + '\',this.value)">' +
+                        prevBadge(pv) +
                     '</div>';
                 }).join('') +
             '</div>';
@@ -1347,6 +1434,23 @@
 
     function escHtml(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getPrevSessionData(day, sessionId) {
+        // Find the most recent previous week that has data for this day+session
+        const weeks = Object.keys(data).sort().reverse();
+        for (const wk of weeks) {
+            if (wk >= currentWeek) continue;
+            if (data[wk][day] && data[wk][day][sessionId]) {
+                return data[wk][day][sessionId];
+            }
+        }
+        return null;
+    }
+
+    function prevBadge(val) {
+        if (!val) return '';
+        return '<span class="prev-val">Last: ' + escHtml(val) + '</span>';
     }
 
     function renderHistory() {
