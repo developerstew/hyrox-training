@@ -7,13 +7,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overflow-x: hidden; }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
             background: #0a0a0a;
             color: #e0e0e0;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
         }
 
         .header {
@@ -66,7 +69,6 @@
             font-size: 0.8rem;
             font-weight: 600;
             color: #aaa;
-            min-width: 180px;
             text-align: center;
         }
 
@@ -285,7 +287,8 @@
             font-size: 0.7rem;
             font-weight: 600;
             color: #888;
-            min-width: 140px;
+            min-width: 120px;
+            flex-shrink: 0;
         }
 
         .station-label .spec {
@@ -309,6 +312,7 @@
             font-family: inherit;
             outline: none;
             width: 90px;
+            min-width: 0;
             transition: border-color 0.2s;
         }
 
@@ -511,28 +515,27 @@
         .mobile-day-select {
             display: none;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 12px;
         }
 
         .mobile-day-select select {
             flex: 1;
+            min-width: 0;
             background: #141414;
             border: 1px solid #333;
             color: #f5c842;
             padding: 12px 14px;
             border-radius: 10px;
-            font-size: 1rem;
+            font-size: 16px; /* prevents iOS zoom */
             font-weight: 700;
             font-family: inherit;
-            text-transform: uppercase;
-            letter-spacing: 1px;
             outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5c842' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
+        }
+
+        .mobile-day-select .sync-status {
+            flex-shrink: 0;
+            font-size: 0.6rem;
         }
 
         .mobile-settings-btn {
@@ -564,19 +567,25 @@
         /* MOBILE RESPONSIVE    */
         /* ==================== */
         @media (max-width: 600px) {
-            body { padding: 10px 12px; }
-            h1 { font-size: 1.2rem; letter-spacing: 3px; }
-            .subtitle { font-size: 0.5rem; letter-spacing: 2px; }
-            .header { margin-bottom: 10px; }
+            body { padding: 12px; }
+            h1 { font-size: 1.3rem; letter-spacing: 3px; }
+            .subtitle { font-size: 0.55rem; letter-spacing: 2px; }
+            .header { margin-bottom: 8px; }
 
-            /* Week nav */
-            .week-nav { gap: 6px; margin-bottom: 10px; }
+            /* Week nav — compact */
+            .week-nav { gap: 4px; margin-bottom: 10px; }
             .week-nav button {
-                padding: 10px 14px;
-                font-size: 0.75rem;
+                padding: 10px 12px;
+                font-size: 0.8rem;
                 border-radius: 8px;
+                min-width: 44px;
             }
-            .week-label { font-size: 0.75rem; min-width: auto; }
+            .week-label {
+                font-size: 0.75rem;
+                min-width: 0;
+                flex: 1;
+                text-align: center;
+            }
 
             /* Show mobile dropdown, hide desktop tabs */
             .mobile-day-select { display: flex; }
@@ -591,75 +600,107 @@
                 border-radius: 10px;
             }
             .settings-drawer.hidden { display: none; }
-            .settings-drawer .division-bar { margin-bottom: 10px; }
-            .settings-drawer .sync-bar { margin-bottom: 0; }
 
-            /* Day panel */
-            .day-panel { max-width: 100%; }
-            .day-title { font-size: 1.1rem; letter-spacing: 1.5px; }
-            .day-tags { gap: 8px; margin-bottom: 14px; }
-            .day-tag { font-size: 0.6rem; padding: 3px 10px; }
-
-            /* Session cards */
-            .session-card {
-                padding: 16px 14px;
-                margin-bottom: 12px;
-                border-radius: 12px;
+            /* Division buttons — 2x2 grid so they fit */
+            .settings-drawer .division-bar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                margin-bottom: 10px;
             }
-            .session-check { width: 28px; height: 28px; }
-            .session-check.checked::after { font-size: 0.85rem; }
+            .settings-drawer .division-bar .div-btn {
+                padding: 10px 8px;
+                font-size: 0.65rem;
+                text-align: center;
+                width: 100%;
+            }
+            .settings-drawer .sync-bar {
+                margin-bottom: 0;
+                gap: 6px;
+            }
+            .settings-drawer .sync-bar .sync-btn {
+                padding: 10px 12px;
+                font-size: 0.65rem;
+            }
+
+            /* Day panel — full width */
+            .day-panel { max-width: 100%; }
+            .day-title { font-size: 1.05rem; letter-spacing: 1px; }
+            .day-tags { gap: 6px; margin-bottom: 12px; }
+            .day-tag { font-size: 0.6rem; padding: 4px 10px; }
+
+            /* Session cards — bigger touch targets */
+            .session-card {
+                padding: 14px 12px;
+                margin-bottom: 10px;
+                border-radius: 10px;
+            }
+            .session-header { gap: 10px; margin-bottom: 8px; }
+            .session-check { width: 32px; height: 32px; }
+            .session-check.checked::after { font-size: 0.9rem; }
             .session-name { font-size: 0.95rem; }
-            .session-desc { font-size: 0.75rem; }
+            .session-desc { font-size: 0.75rem; margin-top: 2px; }
             .session-time-label { font-size: 0.6rem; }
 
-            /* Station inputs — stacked layout */
-            .station-log { margin-top: 14px; }
+            /* Station inputs — stacked full-width */
+            .station-log { margin-top: 10px; }
             .station-log-item {
-                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: stretch;
                 gap: 4px;
-                padding: 12px 0;
+                padding: 10px 0;
             }
             .station-label {
-                min-width: 100%;
-                font-size: 0.8rem;
-                margin-bottom: 2px;
+                min-width: 0;
+                width: 100%;
+                font-size: 0.85rem;
+                display: flex;
+                align-items: baseline;
+                gap: 6px;
             }
-            .station-label .spec { font-size: 0.65rem; }
+            .station-label .spec {
+                font-size: 0.65rem;
+                display: inline;
+            }
             .station-log-item .prev-val {
                 margin-left: 0;
                 font-size: 0.65rem;
+                order: 3;
             }
             .station-input {
                 width: 100%;
                 padding: 12px;
-                font-size: 0.95rem;
+                font-size: 16px; /* prevents iOS zoom on focus */
                 border-radius: 8px;
             }
 
-            /* Log fields */
+            /* Log fields — single column on narrow screens */
             .log-fields {
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
-                margin-top: 14px;
+                margin-top: 10px;
             }
             .log-field label { font-size: 0.65rem; }
             .log-field input, .log-field textarea {
                 padding: 12px;
-                font-size: 0.95rem;
+                font-size: 16px; /* prevents iOS zoom */
                 border-radius: 8px;
             }
             .log-field .prev-val { font-size: 0.6rem; }
+            .notes-field textarea { min-height: 50px; }
 
             /* History */
             .history-panel { max-width: 100%; }
-            .history-week { padding: 16px; }
+            .history-week { padding: 14px 12px; }
+            .history-week-header { flex-direction: column; gap: 4px; align-items: flex-start; }
 
             /* Tips — hide on mobile */
-            .tips { display: none; }
+            .tips { display: none !important; }
 
             /* Auth overlay */
-            .setup-card { padding: 24px 20px; }
-            .setup-field input { padding: 14px; font-size: 1rem; }
+            .overlay { padding: 16px; }
+            .setup-card { padding: 24px 18px; }
+            .setup-field input { padding: 14px; font-size: 16px; }
             .setup-btn { padding: 16px; font-size: 0.9rem; }
             .auth-toggle-btn { padding: 12px; font-size: 0.75rem; }
         }
