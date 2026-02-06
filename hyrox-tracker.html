@@ -418,6 +418,31 @@
 
         #importInput { display: none; }
 
+        /* Division selector */
+        .division-bar {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .div-btn {
+            background: #141414;
+            border: 1px solid #222;
+            color: #555;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .div-btn:hover { border-color: #444; color: #aaa; }
+        .div-btn.active { border-color: #f5c842; color: #f5c842; background: rgba(245, 200, 66, 0.05); }
+
         /* Tips */
         .tips {
             max-width: 700px;
@@ -451,13 +476,20 @@
 <body>
     <div class="header">
         <h1>HYROX</h1>
-        <div class="subtitle">Training Tracker &middot; Pro Division</div>
+        <div class="subtitle" id="subtitleText">Training Tracker &middot; Pro Division</div>
     </div>
 
     <div class="week-nav">
         <button onclick="changeWeek(-1)">&larr; Prev</button>
         <div class="week-label" id="weekLabel"></div>
         <button onclick="changeWeek(1)">Next &rarr;</button>
+    </div>
+
+    <div class="division-bar">
+        <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
+        <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
+        <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
+        <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
     </div>
 
     <div class="sync-bar">
@@ -486,6 +518,32 @@
     <div class="save-indicator" id="saveIndicator">Saved</div>
 
     <script>
+    const WEIGHTS = {
+        pro:          { sledpush: '50m · 202kg', sledpull: '50m · 153kg', farmer: '200m · 2×32kg', lunges: '100m · 30kg', wallballs: '100 reps · 9kg' },
+        open:         { sledpush: '50m · 152kg', sledpull: '50m · 103kg', farmer: '200m · 2×24kg', lunges: '100m · 20kg', wallballs: '100 reps · 6kg' },
+        doubles:      { sledpush: '50m · 152kg (split)', sledpull: '50m · 103kg (split)', farmer: '200m · 2×24kg (split)', lunges: '100m · 20kg (split)', wallballs: '100 reps · 6kg (split)' },
+        'doubles-pro': { sledpush: '50m · 202kg (split)', sledpull: '50m · 153kg (split)', farmer: '200m · 2×32kg (split)', lunges: '100m · 30kg (split)', wallballs: '100 reps · 9kg (split)' },
+    };
+
+    const DIV_LABELS = { pro: 'Pro Division', open: "Men's Open", doubles: 'Doubles', 'doubles-pro': 'Doubles Pro' };
+
+    let currentDivision = localStorage.getItem('hyrox-division') || 'pro';
+
+    function getSpec(stationId) {
+        if (stationId === 'skierg' || stationId === 'rowerg') return '1000m';
+        if (stationId === 'burpee') return '80m';
+        return WEIGHTS[currentDivision][stationId] || '';
+    }
+
+    function setDivision(div) {
+        currentDivision = div;
+        localStorage.setItem('hyrox-division', div);
+        document.querySelectorAll('.div-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('div-' + div).classList.add('active');
+        document.getElementById('subtitleText').innerHTML = 'Training Tracker &middot; ' + DIV_LABELS[div];
+        render();
+    }
+
     const PLAN = {
         monday: {
             name: 'Monday', tags: ['strength', 'stations'],
@@ -787,10 +845,11 @@
             fieldsHtml = `<div class="station-log">
                 ${session.stations.map(st => {
                     const val = sData[st.id] || '';
+                    const spec = st.isRun ? '' : getSpec(st.id);
                     return `<div class="station-log-item">
                         <div class="station-label ${st.isRun ? 'run-label' : ''}">
                             ${st.name}
-                            ${st.spec ? `<span class="spec">${st.spec}</span>` : ''}
+                            ${spec ? `<span class="spec">${spec}</span>` : ''}
                         </div>
                         <input class="station-input" type="text" placeholder="${st.placeholder}" value="${val}"
                             oninput="onInput('${day}','${session.id}','${st.id}',this.value)">
@@ -940,6 +999,7 @@
     }
 
     // Init
+    setDivision(currentDivision);
     render();
     </script>
 </body>

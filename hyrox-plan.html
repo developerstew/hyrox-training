@@ -187,13 +187,34 @@
             gap: 5px;
         }
 
-        .tip-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #f5c842;
-            flex-shrink: 0;
+        .weight-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.55rem;
         }
+
+        .weight-table th {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: #555;
+            text-align: left;
+            padding: 2px 8px;
+            border-bottom: 1px solid #222;
+        }
+
+        .weight-table td {
+            padding: 2px 8px;
+            color: #666;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .weight-table .hl {
+            color: #f5c842;
+            font-weight: 600;
+        }
+
+        .weight-table th.hl { color: #f5c842; }
     </style>
 </head>
 <body>
@@ -365,11 +386,27 @@
     </div>
 
     <div class="tips">
-        <div class="tip"><span class="tip-dot"></span>Train sleds heavier than race weight</div>
-        <div class="tip"><span class="tip-dot"></span>Deload every 3-4 weeks</div>
-        <div class="tip"><span class="tip-dot"></span>Full race simulation every 4-6 weeks</div>
-        <div class="tip"><span class="tip-dot"></span>80% low intensity / 20% high intensity</div>
-        <div class="tip"><span class="tip-dot"></span>Roxzone transitions under 10 seconds</div>
+        <table class="weight-table">
+            <thead>
+                <tr>
+                    <th>Station</th>
+                    <th>Dist / Reps</th>
+                    <th class="hl">Pro</th>
+                    <th>Men's Open</th>
+                    <th>Doubles</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1. SkiErg</td><td>1000m</td><td class="hl" colspan="3">&mdash;</td></tr>
+                <tr><td>2. Sled Push</td><td>50m</td><td class="hl">202 kg</td><td>152 kg</td><td>152 kg (split)</td></tr>
+                <tr><td>3. Sled Pull</td><td>50m</td><td class="hl">153 kg</td><td>103 kg</td><td>103 kg (split)</td></tr>
+                <tr><td>4. Burpee Broad Jumps</td><td>80m</td><td class="hl" colspan="3">&mdash;</td></tr>
+                <tr><td>5. RowErg</td><td>1000m</td><td class="hl" colspan="3">&mdash;</td></tr>
+                <tr><td>6. Farmer Carries</td><td>200m</td><td class="hl">2&times;32 kg</td><td>2&times;24 kg</td><td>2&times;24 kg (split)</td></tr>
+                <tr><td>7. Sandbag Lunges</td><td>100m</td><td class="hl">30 kg</td><td>20 kg</td><td>20 kg (split)</td></tr>
+                <tr><td>8. Wall Balls</td><td>100 reps</td><td class="hl">9 kg</td><td>6 kg</td><td>6 kg (split)</td></tr>
+            </tbody>
+        </table>
     </div>
 </body>
 </html>
