@@ -506,66 +506,162 @@
         }
 
         /* ==================== */
+        /* MOBILE DAY SELECT    */
+        /* ==================== */
+        .mobile-day-select {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-day-select select {
+            flex: 1;
+            background: #141414;
+            border: 1px solid #333;
+            color: #f5c842;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5c842' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        .mobile-settings-btn {
+            background: #141414;
+            border: 1px solid #333;
+            color: #888;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .mobile-settings-btn:hover, .mobile-settings-btn.active { border-color: #f5c842; color: #f5c842; }
+
+        .settings-drawer {
+            /* On desktop: just a plain container, always visible */
+        }
+
+        .settings-drawer.hidden {
+            /* On desktop: hidden class is ignored — always visible */
+        }
+
+        /* ==================== */
         /* MOBILE RESPONSIVE    */
         /* ==================== */
         @media (max-width: 600px) {
-            body { padding: 12px 10px; }
+            body { padding: 10px 12px; }
+            h1 { font-size: 1.2rem; letter-spacing: 3px; }
+            .subtitle { font-size: 0.5rem; letter-spacing: 2px; }
+            .header { margin-bottom: 10px; }
 
-            h1 { font-size: 1.3rem; letter-spacing: 4px; }
-
-            .week-nav { gap: 8px; margin-bottom: 12px; }
-            .week-nav button { padding: 8px 12px; font-size: 0.7rem; }
-            .week-label { font-size: 0.7rem; min-width: 140px; }
-
-            .tabs {
-                gap: 3px;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                justify-content: flex-start;
-                padding-bottom: 4px;
-                -webkit-overflow-scrolling: touch;
-            }
-            .tab {
-                padding: 10px 12px;
-                font-size: 0.6rem;
-                flex-shrink: 0;
-                letter-spacing: 0.5px;
-            }
-
-            .division-bar { gap: 3px; flex-wrap: wrap; }
-            .div-btn { padding: 8px 10px; font-size: 0.55rem; }
-
-            .sync-bar { gap: 6px; }
-            .sync-btn { padding: 8px 12px; font-size: 0.55rem; }
-
-            .day-panel { max-width: 100%; }
-
-            .session-card { padding: 14px 12px; }
-            .session-name { font-size: 0.8rem; }
-
-            .log-fields {
-                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-                gap: 6px;
-            }
-            .log-field input, .log-field textarea {
-                padding: 8px 10px;
-                font-size: 0.8rem;
-            }
-
-            .station-log-item { gap: 6px; padding: 10px 0; }
-            .station-label { min-width: 100px; font-size: 0.65rem; }
-            .station-input {
-                width: 80px;
-                padding: 8px 6px;
+            /* Week nav */
+            .week-nav { gap: 6px; margin-bottom: 10px; }
+            .week-nav button {
+                padding: 10px 14px;
                 font-size: 0.75rem;
+                border-radius: 8px;
+            }
+            .week-label { font-size: 0.75rem; min-width: auto; }
+
+            /* Show mobile dropdown, hide desktop tabs */
+            .mobile-day-select { display: flex; }
+            .tabs { display: none; }
+
+            /* Settings drawer on mobile: styled + toggleable */
+            .settings-drawer {
+                margin-bottom: 12px;
+                padding: 12px;
+                background: #111;
+                border: 1px solid #1e1e1e;
+                border-radius: 10px;
+            }
+            .settings-drawer.hidden { display: none; }
+            .settings-drawer .division-bar { margin-bottom: 10px; }
+            .settings-drawer .sync-bar { margin-bottom: 0; }
+
+            /* Day panel */
+            .day-panel { max-width: 100%; }
+            .day-title { font-size: 1.1rem; letter-spacing: 1.5px; }
+            .day-tags { gap: 8px; margin-bottom: 14px; }
+            .day-tag { font-size: 0.6rem; padding: 3px 10px; }
+
+            /* Session cards */
+            .session-card {
+                padding: 16px 14px;
+                margin-bottom: 12px;
+                border-radius: 12px;
+            }
+            .session-check { width: 28px; height: 28px; }
+            .session-check.checked::after { font-size: 0.85rem; }
+            .session-name { font-size: 0.95rem; }
+            .session-desc { font-size: 0.75rem; }
+            .session-time-label { font-size: 0.6rem; }
+
+            /* Station inputs — stacked layout */
+            .station-log { margin-top: 14px; }
+            .station-log-item {
+                flex-wrap: wrap;
+                gap: 4px;
+                padding: 12px 0;
+            }
+            .station-label {
+                min-width: 100%;
+                font-size: 0.8rem;
+                margin-bottom: 2px;
+            }
+            .station-label .spec { font-size: 0.65rem; }
+            .station-log-item .prev-val {
+                margin-left: 0;
+                font-size: 0.65rem;
+            }
+            .station-input {
+                width: 100%;
+                padding: 12px;
+                font-size: 0.95rem;
+                border-radius: 8px;
             }
 
-            .tips { padding: 6px 10px; gap: 10px; }
-            .tip { font-size: 0.5rem; }
+            /* Log fields */
+            .log-fields {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-top: 14px;
+            }
+            .log-field label { font-size: 0.65rem; }
+            .log-field input, .log-field textarea {
+                padding: 12px;
+                font-size: 0.95rem;
+                border-radius: 8px;
+            }
+            .log-field .prev-val { font-size: 0.6rem; }
 
+            /* History */
+            .history-panel { max-width: 100%; }
+            .history-week { padding: 16px; }
+
+            /* Tips — hide on mobile */
+            .tips { display: none; }
+
+            /* Auth overlay */
             .setup-card { padding: 24px 20px; }
-            .setup-field input { padding: 12px 14px; font-size: 0.85rem; }
-            .setup-btn { padding: 14px; font-size: 0.8rem; }
+            .setup-field input { padding: 14px; font-size: 1rem; }
+            .setup-btn { padding: 16px; font-size: 0.9rem; }
+            .auth-toggle-btn { padding: 12px; font-size: 0.75rem; }
         }
 
         /* ==================== */
@@ -817,19 +913,28 @@
             <button onclick="changeWeek(1)">Next &rarr;</button>
         </div>
 
-        <div class="division-bar">
-            <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
-            <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
-            <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
-            <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
+        <!-- Mobile day selector -->
+        <div class="mobile-day-select" id="mobileDaySelect">
+            <select id="dayDropdown" onchange="selectDay(this.value)"></select>
+            <span class="sync-status synced" id="syncStatusMobile">Synced</span>
+            <button class="mobile-settings-btn" onclick="toggleMobileSettings()">&#9881;</button>
         </div>
 
-        <div class="sync-bar" id="syncBar">
-            <span class="sync-status synced" id="syncStatus">Synced</span>
-            <button class="sync-btn" onclick="signOut()" id="signOutBtn">Sign Out</button>
-            <button class="sync-btn" onclick="exportData()" id="exportBtn">Export</button>
-            <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import</button>
-            <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+        <!-- Settings drawer (division, sync, etc.) -->
+        <div class="settings-drawer hidden" id="settingsDrawer">
+            <div class="division-bar">
+                <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
+                <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
+                <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
+                <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
+            </div>
+            <div class="sync-bar" id="syncBar">
+                <span class="sync-status synced" id="syncStatus">Synced</span>
+                <button class="sync-btn" onclick="signOut()" id="signOutBtn">Sign Out</button>
+                <button class="sync-btn" onclick="exportData()" id="exportBtn">Export</button>
+                <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import</button>
+                <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+            </div>
         </div>
 
         <div class="tabs" id="tabs"></div>
@@ -1214,6 +1319,11 @@
             el.className = 'sync-status ' + cls;
             el.textContent = text;
         }
+        const mobileEl = document.getElementById('syncStatusMobile');
+        if (mobileEl) {
+            mobileEl.className = 'sync-status ' + cls;
+            mobileEl.textContent = text;
+        }
     }
 
     /* ====================
@@ -1347,6 +1457,7 @@
         weekLabel.innerHTML = getWeekDisplay(currentWeek) +
             (isCurrentWeek(currentWeek) ? '<span class="current-badge">Current</span>' : '');
 
+        // Desktop tabs
         const tabsEl = document.getElementById('tabs');
         tabsEl.innerHTML = DAYS.map(day => {
             const plan = PLAN[day];
@@ -1355,7 +1466,20 @@
                 plan.name +
                 '<span class="completion ' + (comp !== 'none' ? comp : '') + '"></span>' +
             '</div>';
-        }).join('') + '<div class="tab ' + (showHistory ? 'active' : '') + '" onclick="toggleHistory()">History</div>';
+        }).join('') + '<div class="tab ' + (showHistory ? 'active' : '') + '" onclick="selectDay(\'history\')">History</div>';
+
+        // Mobile dropdown
+        const dropdown = document.getElementById('dayDropdown');
+        if (dropdown) {
+            dropdown.innerHTML = DAYS.map(day => {
+                const plan = PLAN[day];
+                const comp = getDayCompletion(day);
+                const indicator = comp === 'done' ? ' \u2713' : comp === 'partial' ? ' \u25CF' : '';
+                return '<option value="' + day + '"' + (day === activeDay && !showHistory ? ' selected' : '') + '>' +
+                    plan.name + indicator + '</option>';
+            }).join('') +
+            '<option value="history"' + (showHistory ? ' selected' : '') + '>History</option>';
+        }
 
         const panelsEl = document.getElementById('dayPanels');
         panelsEl.innerHTML = DAYS.map(day => {
@@ -1496,14 +1620,25 @@
     }
 
     function selectDay(day) {
-        activeDay = day;
-        showHistory = false;
+        if (day === 'history') {
+            showHistory = true;
+        } else {
+            activeDay = day;
+            showHistory = false;
+        }
         render();
     }
 
     function toggleHistory() {
         showHistory = !showHistory;
         render();
+    }
+
+    function toggleMobileSettings() {
+        const drawer = document.getElementById('settingsDrawer');
+        const btn = document.querySelector('.mobile-settings-btn');
+        drawer.classList.toggle('hidden');
+        btn.classList.toggle('active');
     }
 
     function jumpToWeek(weekId) {
