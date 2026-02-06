@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HYROX Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -190,7 +191,7 @@
 
         .session-check:hover { border-color: #34d399; }
         .session-check.checked { background: #34d399; border-color: #34d399; }
-        .session-check.checked::after { content: '✓'; color: #0a0a0a; font-size: 0.7rem; font-weight: 700; }
+        .session-check.checked::after { content: '\2713'; color: #0a0a0a; font-size: 0.7rem; font-weight: 700; }
 
         .session-info { flex: 1; }
 
@@ -396,6 +397,8 @@
             justify-content: center;
             gap: 8px;
             margin-bottom: 16px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .sync-btn {
@@ -417,6 +420,17 @@
         .sync-btn.success { border-color: #34d399; color: #34d399; }
 
         #importInput { display: none; }
+
+        .sync-status {
+            font-size: 0.55rem;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .sync-status.synced { color: #34d399; }
+        .sync-status.syncing { color: #f5c842; }
+        .sync-status.error { color: #ef4444; }
+        .sync-status.local { color: #555; }
 
         /* Division selector */
         .division-bar {
@@ -471,78 +485,370 @@
             background: #f5c842;
             flex-shrink: 0;
         }
+
+        /* ==================== */
+        /* OVERLAY SCREENS      */
+        /* ==================== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .setup-card {
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .setup-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #f5c842, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .setup-step {
+            font-size: 0.6rem;
+            text-align: center;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+        }
+
+        .setup-instructions {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .setup-instructions ol {
+            padding-left: 20px;
+        }
+
+        .setup-instructions a {
+            color: #f5c842;
+            text-decoration: none;
+        }
+
+        .sql-block {
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.55rem;
+            color: #888;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 12px 0;
+            max-height: 180px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .copy-btn:hover { border-color: #f5c842; color: #f5c842; }
+
+        .setup-field {
+            margin-bottom: 14px;
+        }
+
+        .setup-field label {
+            display: block;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .setup-field input {
+            width: 100%;
+            background: #1e1e1e;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .setup-field input:focus { border-color: #f5c842; }
+
+        .setup-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f5c842, #ff6b35);
+            border: none;
+            color: #0a0a0a;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .setup-btn:hover { opacity: 0.9; }
+        .setup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .setup-error {
+            color: #ef4444;
+            font-size: 0.7rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .setup-success {
+            color: #34d399;
+            font-size: 0.7rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .setup-note {
+            font-size: 0.6rem;
+            color: #555;
+            text-align: center;
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+
+        .setup-divider {
+            height: 1px;
+            background: #222;
+            margin: 20px 0;
+        }
+
+        .auth-toggle {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .auth-toggle-btn {
+            flex: 1;
+            background: #1e1e1e;
+            border: 1px solid #222;
+            color: #555;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .auth-toggle-btn.active { border-color: #f5c842; color: #f5c842; }
+
+        .loading-text {
+            text-align: center;
+            color: #555;
+            font-size: 0.8rem;
+            padding: 40px 0;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>HYROX</h1>
-        <div class="subtitle" id="subtitleText">Training Tracker &middot; Pro Division</div>
+    <!-- SETUP OVERLAY -->
+    <div class="overlay hidden" id="setupOverlay">
+        <div class="setup-card">
+            <div class="setup-title">HYROX</div>
+            <div class="setup-step">Cloud Setup</div>
+
+            <div class="setup-instructions">
+                <ol>
+                    <li>Go to <a href="https://supabase.com" target="_blank">supabase.com</a> and create a free project</li>
+                    <li>Open <strong>SQL Editor</strong> and run the SQL below</li>
+                    <li>Go to <strong>Settings &rarr; API</strong> and copy your URL and anon key</li>
+                    <li>Paste them below</li>
+                </ol>
+            </div>
+
+            <div class="sql-block" id="sqlBlock">-- Run this in Supabase SQL Editor
+
+create table if not exists workouts (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  week_id text not null,
+  data jsonb not null default '{}',
+  updated_at timestamptz default now(),
+  unique(user_id, week_id)
+);
+
+create table if not exists user_settings (
+  user_id uuid references auth.users(id) on delete cascade primary key,
+  division text default 'pro',
+  updated_at timestamptz default now()
+);
+
+alter table workouts enable row level security;
+alter table user_settings enable row level security;
+
+create policy "Users manage own workouts"
+  on workouts for all
+  using (auth.uid() = user_id);
+
+create policy "Users manage own settings"
+  on user_settings for all
+  using (auth.uid() = user_id);</div>
+
+            <button class="copy-btn" onclick="copySQL()">Copy SQL</button>
+
+            <div class="setup-instructions">
+                <strong>Tip:</strong> For instant signup (no email confirmation), go to
+                <strong>Authentication &rarr; Providers &rarr; Email</strong> and disable <em>Confirm email</em>.
+            </div>
+
+            <div class="setup-divider"></div>
+
+            <div class="setup-field">
+                <label>Supabase Project URL</label>
+                <input type="url" id="setupUrl" placeholder="https://xxxxx.supabase.co">
+            </div>
+            <div class="setup-field">
+                <label>Supabase Anon Key</label>
+                <input type="text" id="setupKey" placeholder="eyJhbGciOi...">
+            </div>
+
+            <button class="setup-btn" onclick="saveSetup()">Connect</button>
+            <div class="setup-error hidden" id="setupError"></div>
+        </div>
     </div>
 
-    <div class="week-nav">
-        <button onclick="changeWeek(-1)">&larr; Prev</button>
-        <div class="week-label" id="weekLabel"></div>
-        <button onclick="changeWeek(1)">Next &rarr;</button>
+    <!-- AUTH OVERLAY -->
+    <div class="overlay hidden" id="authOverlay">
+        <div class="setup-card">
+            <div class="setup-title">HYROX</div>
+            <div class="setup-step">Sign In</div>
+
+            <div class="auth-toggle">
+                <button class="auth-toggle-btn active" id="authSignIn" onclick="setAuthMode('signin')">Sign In</button>
+                <button class="auth-toggle-btn" id="authSignUp" onclick="setAuthMode('signup')">Sign Up</button>
+            </div>
+
+            <div class="setup-field">
+                <label>Email</label>
+                <input type="email" id="authEmail" placeholder="you@example.com">
+            </div>
+            <div class="setup-field">
+                <label>Password</label>
+                <input type="password" id="authPassword" placeholder="Your password">
+            </div>
+
+            <button class="setup-btn" onclick="doAuth()" id="authBtn">Sign In</button>
+            <div class="setup-error hidden" id="authError"></div>
+            <div class="setup-success hidden" id="authSuccess"></div>
+
+            <div class="setup-note">
+                Your workouts sync across all devices.<br>
+                <a href="#" onclick="resetSetup(); return false;" style="color:#555;text-decoration:underline;">Change Supabase config</a>
+            </div>
+        </div>
     </div>
 
-    <div class="division-bar">
-        <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
-        <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
-        <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
-        <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
+    <!-- LOADING OVERLAY -->
+    <div class="overlay hidden" id="loadingOverlay">
+        <div class="loading-text">Loading your data...</div>
     </div>
 
-    <div class="sync-bar">
-        <button class="sync-btn" onclick="exportData()" id="exportBtn">Export Data</button>
-        <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import Data</button>
-        <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+    <!-- MAIN TRACKER -->
+    <div id="mainApp" class="hidden">
+        <div class="header">
+            <h1>HYROX</h1>
+            <div class="subtitle" id="subtitleText">Training Tracker &middot; Pro Division</div>
+        </div>
+
+        <div class="week-nav">
+            <button onclick="changeWeek(-1)">&larr; Prev</button>
+            <div class="week-label" id="weekLabel"></div>
+            <button onclick="changeWeek(1)">Next &rarr;</button>
+        </div>
+
+        <div class="division-bar">
+            <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
+            <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
+            <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
+            <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
+        </div>
+
+        <div class="sync-bar" id="syncBar">
+            <span class="sync-status synced" id="syncStatus">Synced</span>
+            <button class="sync-btn" onclick="signOut()" id="signOutBtn">Sign Out</button>
+            <button class="sync-btn" onclick="exportData()" id="exportBtn">Export</button>
+            <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import</button>
+            <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+        </div>
+
+        <div class="tabs" id="tabs"></div>
+
+        <div id="dayPanels"></div>
+
+        <div class="history-panel" id="historyPanel">
+            <div class="history-title">Weekly History</div>
+            <div id="historyList"></div>
+        </div>
+
+        <div class="tips">
+            <div class="tip"><span class="tip-dot"></span>Train sleds heavier than race weight</div>
+            <div class="tip"><span class="tip-dot"></span>Deload every 3-4 weeks</div>
+            <div class="tip"><span class="tip-dot"></span>Full race sim every 4-6 weeks</div>
+            <div class="tip"><span class="tip-dot"></span>80/20 intensity split</div>
+            <div class="tip"><span class="tip-dot"></span>Roxzone transitions &lt;10s</div>
+        </div>
+
+        <div class="save-indicator" id="saveIndicator">Saved</div>
     </div>
-
-    <div class="tabs" id="tabs"></div>
-
-    <div id="dayPanels"></div>
-
-    <div class="history-panel" id="historyPanel">
-        <div class="history-title">Weekly History</div>
-        <div id="historyList"></div>
-    </div>
-
-    <div class="tips">
-        <div class="tip"><span class="tip-dot"></span>Train sleds heavier than race weight</div>
-        <div class="tip"><span class="tip-dot"></span>Deload every 3-4 weeks</div>
-        <div class="tip"><span class="tip-dot"></span>Full race sim every 4-6 weeks</div>
-        <div class="tip"><span class="tip-dot"></span>80/20 intensity split</div>
-        <div class="tip"><span class="tip-dot"></span>Roxzone transitions &lt;10s</div>
-    </div>
-
-    <div class="save-indicator" id="saveIndicator">Saved</div>
 
     <script>
+    /* ====================
+       CONSTANTS
+       ==================== */
     const WEIGHTS = {
-        pro:          { sledpush: '50m · 202kg', sledpull: '50m · 153kg', farmer: '200m · 2×32kg', lunges: '100m · 30kg', wallballs: '100 reps · 9kg' },
-        open:         { sledpush: '50m · 152kg', sledpull: '50m · 103kg', farmer: '200m · 2×24kg', lunges: '100m · 20kg', wallballs: '100 reps · 6kg' },
-        doubles:      { sledpush: '50m · 152kg (split)', sledpull: '50m · 103kg (split)', farmer: '200m · 2×24kg (split)', lunges: '100m · 20kg (split)', wallballs: '100 reps · 6kg (split)' },
-        'doubles-pro': { sledpush: '50m · 202kg (split)', sledpull: '50m · 153kg (split)', farmer: '200m · 2×32kg (split)', lunges: '100m · 30kg (split)', wallballs: '100 reps · 9kg (split)' },
+        pro:          { sledpush: '50m \u00b7 202kg', sledpull: '50m \u00b7 153kg', farmer: '200m \u00b7 2\u00d732kg', lunges: '100m \u00b7 30kg', wallballs: '100 reps \u00b7 9kg' },
+        open:         { sledpush: '50m \u00b7 152kg', sledpull: '50m \u00b7 103kg', farmer: '200m \u00b7 2\u00d724kg', lunges: '100m \u00b7 20kg', wallballs: '100 reps \u00b7 6kg' },
+        doubles:      { sledpush: '50m \u00b7 152kg (split)', sledpull: '50m \u00b7 103kg (split)', farmer: '200m \u00b7 2\u00d724kg (split)', lunges: '100m \u00b7 20kg (split)', wallballs: '100 reps \u00b7 6kg (split)' },
+        'doubles-pro': { sledpush: '50m \u00b7 202kg (split)', sledpull: '50m \u00b7 153kg (split)', farmer: '200m \u00b7 2\u00d732kg (split)', lunges: '100m \u00b7 30kg (split)', wallballs: '100 reps \u00b7 9kg (split)' },
     };
 
     const DIV_LABELS = { pro: 'Pro Division', open: "Men's Open", doubles: 'Doubles', 'doubles-pro': 'Doubles Pro' };
-
-    let currentDivision = localStorage.getItem('hyrox-division') || 'pro';
-
-    function getSpec(stationId) {
-        if (stationId === 'skierg' || stationId === 'rowerg') return '1000m';
-        if (stationId === 'burpee') return '80m';
-        return WEIGHTS[currentDivision][stationId] || '';
-    }
-
-    function setDivision(div) {
-        currentDivision = div;
-        localStorage.setItem('hyrox-division', div);
-        document.querySelectorAll('.div-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('div-' + div).classList.add('active');
-        document.getElementById('subtitleText').innerHTML = 'Training Tracker &middot; ' + DIV_LABELS[div];
-        render();
-    }
 
     const PLAN = {
         monday: {
@@ -550,19 +856,17 @@
             sessions: [
                 {
                     id: 'strength', time: 'Morning', name: 'Upper Body Strength Endurance',
-                    desc: '~45 min · Moderate weight, higher reps',
-                    fields: [
-                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
-                    ]
+                    desc: '~45 min \u00b7 Moderate weight, higher reps',
+                    fields: [{ id: 'duration', label: 'Duration', placeholder: '45 min' }]
                 },
                 {
                     id: 'stations', time: 'Lunchtime', name: 'Upper Body Stations',
                     desc: 'Technique focus, no runs',
                     stations: [
-                        { id: 'skierg', name: 'SkiErg', spec: '1000m', placeholder: 'e.g. 4:30' },
-                        { id: 'rowerg', name: 'RowErg', spec: '1000m', placeholder: 'e.g. 4:15' },
-                        { id: 'farmer', name: 'Farmer Carries', spec: '200m · 2×32kg', placeholder: 'e.g. 2:00' },
-                        { id: 'wallballs', name: 'Wall Balls', spec: '100 reps · 9kg', placeholder: 'e.g. 8:30' },
+                        { id: 'skierg', name: 'SkiErg', placeholder: 'e.g. 4:30' },
+                        { id: 'rowerg', name: 'RowErg', placeholder: 'e.g. 4:15' },
+                        { id: 'farmer', name: 'Farmer Carries', placeholder: 'e.g. 2:00' },
+                        { id: 'wallballs', name: 'Wall Balls', placeholder: 'e.g. 8:30' },
                     ]
                 }
             ]
@@ -572,23 +876,21 @@
             sessions: [
                 {
                     id: 'strength', time: 'Morning', name: 'Lower Body Strength Endurance',
-                    desc: '~45 min · Moderate weight, higher reps',
-                    fields: [
-                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
-                    ]
+                    desc: '~45 min \u00b7 Moderate weight, higher reps',
+                    fields: [{ id: 'duration', label: 'Duration', placeholder: '45 min' }]
                 },
                 {
-                    id: 'stations', time: 'Evening', name: 'Lower Body Stations — Compromised',
+                    id: 'stations', time: 'Evening', name: 'Lower Body Stations \u2014 Compromised',
                     desc: 'Roxzone transitions <10s',
                     stations: [
-                        { id: 'run1', name: '1km Run', spec: '', placeholder: 'e.g. 4:20', isRun: true },
-                        { id: 'sledpush', name: 'Sled Push', spec: '50m · 202kg', placeholder: 'e.g. 3:00' },
-                        { id: 'run2', name: '1km Run', spec: '', placeholder: 'e.g. 4:25', isRun: true },
-                        { id: 'sledpull', name: 'Sled Pull', spec: '50m · 153kg', placeholder: 'e.g. 2:30' },
-                        { id: 'run3', name: '1km Run', spec: '', placeholder: 'e.g. 4:30', isRun: true },
-                        { id: 'burpee', name: 'Burpee Broad Jumps', spec: '80m', placeholder: 'e.g. 5:00' },
-                        { id: 'run4', name: '1km Run', spec: '', placeholder: 'e.g. 4:35', isRun: true },
-                        { id: 'lunges', name: 'Sandbag Lunges', spec: '100m · 30kg', placeholder: 'e.g. 6:00' },
+                        { id: 'run1', name: '1km Run', placeholder: 'e.g. 4:20', isRun: true },
+                        { id: 'sledpush', name: 'Sled Push', placeholder: 'e.g. 3:00' },
+                        { id: 'run2', name: '1km Run', placeholder: 'e.g. 4:25', isRun: true },
+                        { id: 'sledpull', name: 'Sled Pull', placeholder: 'e.g. 2:30' },
+                        { id: 'run3', name: '1km Run', placeholder: 'e.g. 4:30', isRun: true },
+                        { id: 'burpee', name: 'Burpee Broad Jumps', placeholder: 'e.g. 5:00' },
+                        { id: 'run4', name: '1km Run', placeholder: 'e.g. 4:35', isRun: true },
+                        { id: 'lunges', name: 'Sandbag Lunges', placeholder: 'e.g. 6:00' },
                     ]
                 }
             ]
@@ -598,7 +900,7 @@
             sessions: [
                 {
                     id: 'mobility', time: '', name: 'Mobility',
-                    desc: '30 min · Full body',
+                    desc: '30 min \u00b7 Full body',
                     fields: [{ id: 'duration', label: 'Duration', placeholder: '30 min' }]
                 },
                 {
@@ -608,7 +910,7 @@
                 },
                 {
                     id: 'zone2', time: '', name: 'Zone 2 Jog',
-                    desc: '45-60 min · Conversational pace',
+                    desc: '45-60 min \u00b7 Conversational pace',
                     fields: [
                         { id: 'duration', label: 'Duration', placeholder: '50 min' },
                         { id: 'distance', label: 'Distance', placeholder: '8 km' },
@@ -627,23 +929,21 @@
             sessions: [
                 {
                     id: 'strength', time: 'Morning', name: 'Upper Body Strength Endurance',
-                    desc: '~45 min · Moderate weight, higher reps',
-                    fields: [
-                        { id: 'duration', label: 'Duration', placeholder: '45 min' },
-                    ]
+                    desc: '~45 min \u00b7 Moderate weight, higher reps',
+                    fields: [{ id: 'duration', label: 'Duration', placeholder: '45 min' }]
                 },
                 {
-                    id: 'stations', time: 'Lunchtime', name: 'Upper Body Stations — Compromised',
+                    id: 'stations', time: 'Lunchtime', name: 'Upper Body Stations \u2014 Compromised',
                     desc: 'Roxzone transitions <10s',
                     stations: [
-                        { id: 'run1', name: '1km Run', spec: '', placeholder: 'e.g. 4:20', isRun: true },
-                        { id: 'skierg', name: 'SkiErg', spec: '1000m', placeholder: 'e.g. 4:30' },
-                        { id: 'run2', name: '1km Run', spec: '', placeholder: 'e.g. 4:25', isRun: true },
-                        { id: 'rowerg', name: 'RowErg', spec: '1000m', placeholder: 'e.g. 4:15' },
-                        { id: 'run3', name: '1km Run', spec: '', placeholder: 'e.g. 4:30', isRun: true },
-                        { id: 'farmer', name: 'Farmer Carries', spec: '200m · 2×32kg', placeholder: 'e.g. 2:00' },
-                        { id: 'run4', name: '1km Run', spec: '', placeholder: 'e.g. 4:35', isRun: true },
-                        { id: 'wallballs', name: 'Wall Balls', spec: '100 reps · 9kg', placeholder: 'e.g. 8:30' },
+                        { id: 'run1', name: '1km Run', placeholder: 'e.g. 4:20', isRun: true },
+                        { id: 'skierg', name: 'SkiErg', placeholder: 'e.g. 4:30' },
+                        { id: 'run2', name: '1km Run', placeholder: 'e.g. 4:25', isRun: true },
+                        { id: 'rowerg', name: 'RowErg', placeholder: 'e.g. 4:15' },
+                        { id: 'run3', name: '1km Run', placeholder: 'e.g. 4:30', isRun: true },
+                        { id: 'farmer', name: 'Farmer Carries', placeholder: 'e.g. 2:00' },
+                        { id: 'run4', name: '1km Run', placeholder: 'e.g. 4:35', isRun: true },
+                        { id: 'wallballs', name: 'Wall Balls', placeholder: 'e.g. 8:30' },
                     ]
                 }
             ]
@@ -667,12 +967,12 @@
                 },
                 {
                     id: 'stations', time: 'Lunchtime', name: 'Lower Body Stations',
-                    desc: 'No runs — keep legs fresh for Saturday',
+                    desc: 'No runs \u2014 keep legs fresh for Saturday',
                     stations: [
-                        { id: 'sledpush', name: 'Sled Push', spec: '50m · 202kg', placeholder: 'e.g. 3:00' },
-                        { id: 'sledpull', name: 'Sled Pull', spec: '50m · 153kg', placeholder: 'e.g. 2:30' },
-                        { id: 'burpee', name: 'Burpee Broad Jumps', spec: '80m', placeholder: 'e.g. 5:00' },
-                        { id: 'lunges', name: 'Sandbag Lunges', spec: '100m · 30kg', placeholder: 'e.g. 6:00' },
+                        { id: 'sledpush', name: 'Sled Push', placeholder: 'e.g. 3:00' },
+                        { id: 'sledpull', name: 'Sled Pull', placeholder: 'e.g. 2:30' },
+                        { id: 'burpee', name: 'Burpee Broad Jumps', placeholder: 'e.g. 5:00' },
+                        { id: 'lunges', name: 'Sandbag Lunges', placeholder: 'e.g. 6:00' },
                     ]
                 }
             ]
@@ -682,7 +982,7 @@
             sessions: [
                 {
                     id: 'longrun', time: '', name: 'Long Zone 2 Run',
-                    desc: '45-90 min · Conversational pace',
+                    desc: '45-90 min \u00b7 Conversational pace',
                     fields: [
                         { id: 'duration', label: 'Duration', placeholder: '60 min' },
                         { id: 'distance', label: 'Distance', placeholder: '10 km' },
@@ -695,11 +995,7 @@
         sunday: {
             name: 'Sunday', tags: ['rest'],
             sessions: [
-                {
-                    id: 'rest', time: '', name: 'Full Rest Day',
-                    desc: 'Recovery',
-                    fields: []
-                }
+                { id: 'rest', time: '', name: 'Full Rest Day', desc: 'Recovery', fields: [] }
             ]
         }
     };
@@ -707,10 +1003,275 @@
     const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
     const TAG_CLASSES = { strength:'tag-strength', stations:'tag-stations', recovery:'tag-recovery', run:'tag-run', rest:'tag-rest', speed:'tag-speed' };
 
+    /* ====================
+       STATE
+       ==================== */
+    let sb = null;           // Supabase client
+    let currentUser = null;  // Logged-in user
+    let isCloud = false;     // Cloud mode active
+
+    let currentDivision = 'pro';
     let currentWeek = getWeekId(new Date());
     let activeDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
-    let data = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
+    let data = {};
     let showHistory = false;
+    let syncTimeout = null;
+
+    /* ====================
+       SUPABASE SETUP
+       ==================== */
+    function getConfig() {
+        try { return JSON.parse(localStorage.getItem('hyrox-supabase')); } catch { return null; }
+    }
+
+    function copySQL() {
+        const sql = document.getElementById('sqlBlock').textContent;
+        navigator.clipboard.writeText(sql).then(() => {
+            const btn = event.target;
+            btn.textContent = 'Copied!';
+            btn.style.borderColor = '#34d399';
+            btn.style.color = '#34d399';
+            setTimeout(() => { btn.textContent = 'Copy SQL'; btn.style.borderColor = ''; btn.style.color = ''; }, 2000);
+        });
+    }
+
+    function saveSetup() {
+        const url = document.getElementById('setupUrl').value.trim();
+        const key = document.getElementById('setupKey').value.trim();
+        const errEl = document.getElementById('setupError');
+
+        if (!url || !key) {
+            errEl.textContent = 'Both fields are required.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        if (!url.includes('supabase')) {
+            errEl.textContent = 'URL should be your Supabase project URL (e.g. https://xxxxx.supabase.co)';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        localStorage.setItem('hyrox-supabase', JSON.stringify({ url, key }));
+        errEl.classList.add('hidden');
+        initApp();
+    }
+
+    function resetSetup() {
+        localStorage.removeItem('hyrox-supabase');
+        if (sb) sb.auth.signOut();
+        sb = null;
+        currentUser = null;
+        isCloud = false;
+        showOverlay('setup');
+    }
+
+    /* ====================
+       AUTH
+       ==================== */
+    let authMode = 'signin';
+
+    function setAuthMode(mode) {
+        authMode = mode;
+        document.getElementById('authSignIn').classList.toggle('active', mode === 'signin');
+        document.getElementById('authSignUp').classList.toggle('active', mode === 'signup');
+        document.getElementById('authBtn').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
+        document.getElementById('authError').classList.add('hidden');
+        document.getElementById('authSuccess').classList.add('hidden');
+    }
+
+    async function doAuth() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value.trim();
+        const errEl = document.getElementById('authError');
+        const successEl = document.getElementById('authSuccess');
+        const btn = document.getElementById('authBtn');
+
+        errEl.classList.add('hidden');
+        successEl.classList.add('hidden');
+
+        if (!email || !password) {
+            errEl.textContent = 'Email and password are required.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        if (password.length < 6) {
+            errEl.textContent = 'Password must be at least 6 characters.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = authMode === 'signin' ? 'Signing in...' : 'Signing up...';
+
+        try {
+            let result;
+            if (authMode === 'signup') {
+                result = await sb.auth.signUp({ email, password });
+                if (result.error) throw result.error;
+
+                if (result.data.user && !result.data.session) {
+                    successEl.textContent = 'Check your email to confirm your account, then sign in.';
+                    successEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign Up';
+                    return;
+                }
+            } else {
+                result = await sb.auth.signInWithPassword({ email, password });
+                if (result.error) throw result.error;
+            }
+
+            currentUser = result.data.user;
+            isCloud = true;
+            await loadCloudData();
+            showOverlay(null);
+            startTracker();
+        } catch (err) {
+            errEl.textContent = err.message || 'Authentication failed.';
+            errEl.classList.remove('hidden');
+        }
+
+        btn.disabled = false;
+        btn.textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+    }
+
+    async function signOut() {
+        if (sb) await sb.auth.signOut();
+        currentUser = null;
+        isCloud = false;
+        data = {};
+        showOverlay('auth');
+    }
+
+    /* ====================
+       CLOUD DATA SYNC
+       ==================== */
+    async function loadCloudData() {
+        if (!sb || !currentUser) return;
+        setSyncStatus('syncing', 'Loading...');
+
+        try {
+            // Load workouts
+            const { data: rows, error } = await sb
+                .from('workouts')
+                .select('week_id, data')
+                .eq('user_id', currentUser.id);
+
+            if (error) throw error;
+
+            data = {};
+            rows.forEach(row => { data[row.week_id] = row.data; });
+
+            // Check if we have local data to migrate
+            const localData = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
+            if (Object.keys(localData).length > 0 && Object.keys(data).length === 0) {
+                data = localData;
+                // Upload local data to cloud
+                for (const weekId of Object.keys(data)) {
+                    await sb.from('workouts').upsert({
+                        user_id: currentUser.id,
+                        week_id: weekId,
+                        data: data[weekId],
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id,week_id' });
+                }
+            }
+
+            // Cache locally
+            localStorage.setItem('hyrox-data', JSON.stringify(data));
+
+            // Load division setting
+            const { data: settings } = await sb
+                .from('user_settings')
+                .select('division')
+                .eq('user_id', currentUser.id)
+                .single();
+
+            if (settings && settings.division) {
+                currentDivision = settings.division;
+            }
+
+            setSyncStatus('synced', 'Synced');
+        } catch (err) {
+            console.error('Load error:', err);
+            // Fall back to localStorage
+            data = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
+            setSyncStatus('error', 'Sync error');
+        }
+    }
+
+    async function syncWeekToCloud(weekId) {
+        if (!sb || !currentUser) return;
+        setSyncStatus('syncing', 'Syncing...');
+
+        try {
+            const weekData = data[weekId] || {};
+            const { error } = await sb.from('workouts').upsert({
+                user_id: currentUser.id,
+                week_id: weekId,
+                data: weekData,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id,week_id' });
+
+            if (error) throw error;
+            setSyncStatus('synced', 'Synced');
+        } catch (err) {
+            console.error('Sync error:', err);
+            setSyncStatus('error', 'Sync error');
+        }
+    }
+
+    async function syncDivisionToCloud() {
+        if (!sb || !currentUser) return;
+        try {
+            await sb.from('user_settings').upsert({
+                user_id: currentUser.id,
+                division: currentDivision,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+        } catch (err) {
+            console.error('Division sync error:', err);
+        }
+    }
+
+    function setSyncStatus(cls, text) {
+        const el = document.getElementById('syncStatus');
+        if (el) {
+            el.className = 'sync-status ' + cls;
+            el.textContent = text;
+        }
+    }
+
+    /* ====================
+       OVERLAY MANAGEMENT
+       ==================== */
+    function showOverlay(which) {
+        document.getElementById('setupOverlay').classList.toggle('hidden', which !== 'setup');
+        document.getElementById('authOverlay').classList.toggle('hidden', which !== 'auth');
+        document.getElementById('loadingOverlay').classList.toggle('hidden', which !== 'loading');
+        document.getElementById('mainApp').classList.toggle('hidden', which !== null);
+    }
+
+    /* ====================
+       TRACKER CORE
+       ==================== */
+    function getSpec(stationId) {
+        if (stationId === 'skierg' || stationId === 'rowerg') return '1000m';
+        if (stationId === 'burpee') return '80m';
+        return WEIGHTS[currentDivision][stationId] || '';
+    }
+
+    function setDivision(div) {
+        currentDivision = div;
+        localStorage.setItem('hyrox-division', div);
+        document.querySelectorAll('.div-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('div-' + div).classList.add('active');
+        document.getElementById('subtitleText').innerHTML = 'Training Tracker &middot; ' + DIV_LABELS[div];
+        if (isCloud) syncDivisionToCloud();
+        render();
+    }
 
     function getWeekId(date) {
         const d = new Date(date);
@@ -720,7 +1281,7 @@
         const yyyy = monday.getFullYear();
         const mm = String(monday.getMonth() + 1).padStart(2, '0');
         const dd = String(monday.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+        return yyyy + '-' + mm + '-' + dd;
     }
 
     function getWeekDisplay(weekId) {
@@ -728,12 +1289,10 @@
         const end = new Date(d);
         end.setDate(end.getDate() + 6);
         const opts = { day: 'numeric', month: 'short' };
-        return `${d.toLocaleDateString('en-GB', opts)} — ${end.toLocaleDateString('en-GB', opts)}`;
+        return d.toLocaleDateString('en-GB', opts) + ' \u2014 ' + end.toLocaleDateString('en-GB', opts);
     }
 
-    function isCurrentWeek(weekId) {
-        return weekId === getWeekId(new Date());
-    }
+    function isCurrentWeek(weekId) { return weekId === getWeekId(new Date()); }
 
     function changeWeek(dir) {
         const d = new Date(currentWeek + 'T00:00:00');
@@ -757,16 +1316,27 @@
     }
 
     function save() {
+        // Always save to localStorage (cache / offline)
         localStorage.setItem('hyrox-data', JSON.stringify(data));
+        showSaveIndicator();
+        updateTabs();
+
+        // Debounced cloud sync
+        if (isCloud) {
+            clearTimeout(syncTimeout);
+            setSyncStatus('syncing', 'Syncing...');
+            syncTimeout = setTimeout(() => syncWeekToCloud(currentWeek), 1500);
+        }
+    }
+
+    function showSaveIndicator() {
         const el = document.getElementById('saveIndicator');
         el.classList.add('show');
         setTimeout(() => el.classList.remove('show'), 1200);
-        updateTabs();
     }
 
     function isSessionCompleted(day, sessionId) {
-        const d = getSessionData(day, sessionId);
-        return d.completed === true;
+        return getSessionData(day, sessionId).completed === true;
     }
 
     function getDayCompletion(day) {
@@ -780,8 +1350,7 @@
     }
 
     function toggleComplete(day, sessionId) {
-        const current = isSessionCompleted(day, sessionId);
-        setSessionData(day, sessionId, 'completed', !current);
+        setSessionData(day, sessionId, 'completed', !isSessionCompleted(day, sessionId));
         render();
     }
 
@@ -791,7 +1360,7 @@
 
     function updateTabs() {
         DAYS.forEach(day => {
-            const dot = document.querySelector(`.tab[data-day="${day}"] .completion`);
+            const dot = document.querySelector('.tab[data-day="' + day + '"] .completion');
             if (dot) {
                 const comp = getDayCompletion(day);
                 dot.className = 'completion' + (comp !== 'none' ? ' ' + comp : '');
@@ -799,36 +1368,35 @@
         });
     }
 
+    /* ====================
+       RENDER
+       ==================== */
     function render() {
-        // Week label
         const weekLabel = document.getElementById('weekLabel');
         weekLabel.innerHTML = getWeekDisplay(currentWeek) +
             (isCurrentWeek(currentWeek) ? '<span class="current-badge">Current</span>' : '');
 
-        // Tabs
         const tabsEl = document.getElementById('tabs');
         tabsEl.innerHTML = DAYS.map(day => {
             const plan = PLAN[day];
             const comp = getDayCompletion(day);
-            return `<div class="tab ${day === activeDay && !showHistory ? 'active' : ''}" data-day="${day}" onclick="selectDay('${day}')">
-                ${plan.name}
-                <span class="completion ${comp !== 'none' ? comp : ''}"></span>
-            </div>`;
-        }).join('') + `<div class="tab ${showHistory ? 'active' : ''}" onclick="toggleHistory()">History</div>`;
+            return '<div class="tab ' + (day === activeDay && !showHistory ? 'active' : '') + '" data-day="' + day + '" onclick="selectDay(\'' + day + '\')">' +
+                plan.name +
+                '<span class="completion ' + (comp !== 'none' ? comp : '') + '"></span>' +
+            '</div>';
+        }).join('') + '<div class="tab ' + (showHistory ? 'active' : '') + '" onclick="toggleHistory()">History</div>';
 
-        // Day panels
         const panelsEl = document.getElementById('dayPanels');
         panelsEl.innerHTML = DAYS.map(day => {
             const plan = PLAN[day];
             const isActive = day === activeDay && !showHistory;
-            return `<div class="day-panel ${isActive ? 'active' : ''}" data-day="${day}">
-                <div class="day-title">${plan.name}</div>
-                <div class="day-tags">${plan.tags.map(t => `<span class="day-tag ${TAG_CLASSES[t]}">${t}</span>`).join('')}</div>
-                ${plan.sessions.map(session => renderSession(day, session)).join('')}
-            </div>`;
+            return '<div class="day-panel ' + (isActive ? 'active' : '') + '" data-day="' + day + '">' +
+                '<div class="day-title">' + plan.name + '</div>' +
+                '<div class="day-tags">' + plan.tags.map(t => '<span class="day-tag ' + TAG_CLASSES[t] + '">' + t + '</span>').join('') + '</div>' +
+                plan.sessions.map(session => renderSession(day, session)).join('') +
+            '</div>';
         }).join('');
 
-        // History
         const historyPanel = document.getElementById('historyPanel');
         historyPanel.className = 'history-panel' + (showHistory ? ' active' : '');
         if (showHistory) renderHistory();
@@ -837,57 +1405,59 @@
     function renderSession(day, session) {
         const sData = getSessionData(day, session.id);
         const completed = sData.completed === true;
-        const checkClass = completed ? 'session-check checked' : 'session-check';
 
         let fieldsHtml = '';
 
         if (session.stations) {
-            fieldsHtml = `<div class="station-log">
-                ${session.stations.map(st => {
+            fieldsHtml = '<div class="station-log">' +
+                session.stations.map(st => {
                     const val = sData[st.id] || '';
                     const spec = st.isRun ? '' : getSpec(st.id);
-                    return `<div class="station-log-item">
-                        <div class="station-label ${st.isRun ? 'run-label' : ''}">
-                            ${st.name}
-                            ${spec ? `<span class="spec">${spec}</span>` : ''}
-                        </div>
-                        <input class="station-input" type="text" placeholder="${st.placeholder}" value="${val}"
-                            oninput="onInput('${day}','${session.id}','${st.id}',this.value)">
-                    </div>`;
-                }).join('')}
-            </div>`;
+                    return '<div class="station-log-item">' +
+                        '<div class="station-label ' + (st.isRun ? 'run-label' : '') + '">' +
+                            st.name +
+                            (spec ? '<span class="spec">' + spec + '</span>' : '') +
+                        '</div>' +
+                        '<input class="station-input" type="text" placeholder="' + st.placeholder + '" value="' + escHtml(val) + '"' +
+                            ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + st.id + '\',this.value)">' +
+                    '</div>';
+                }).join('') +
+            '</div>';
         } else if (session.fields && session.fields.length > 0) {
-            fieldsHtml = `<div class="log-fields">
-                ${session.fields.map(f => {
+            fieldsHtml = '<div class="log-fields">' +
+                session.fields.map(f => {
                     const val = sData[f.id] || '';
-                    return `<div class="log-field">
-                        <label>${f.label}</label>
-                        <input type="text" placeholder="${f.placeholder}" value="${val}"
-                            oninput="onInput('${day}','${session.id}','${f.id}',this.value)">
-                    </div>`;
-                }).join('')}
-            </div>`;
+                    return '<div class="log-field">' +
+                        '<label>' + f.label + '</label>' +
+                        '<input type="text" placeholder="' + f.placeholder + '" value="' + escHtml(val) + '"' +
+                            ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + f.id + '\',this.value)">' +
+                    '</div>';
+                }).join('') +
+            '</div>';
         }
 
-        // Notes field for every session
         const notes = sData.notes || '';
-        const notesHtml = `<div class="log-fields"><div class="log-field notes-field">
-            <label>Notes</label>
-            <textarea placeholder="How did it feel?" oninput="onInput('${day}','${session.id}','notes',this.value)">${notes}</textarea>
-        </div></div>`;
+        const notesHtml = '<div class="log-fields"><div class="log-field notes-field">' +
+            '<label>Notes</label>' +
+            '<textarea placeholder="How did it feel?" oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'notes\',this.value)">' + escHtml(notes) + '</textarea>' +
+        '</div></div>';
 
-        return `<div class="session-card ${completed ? 'completed' : ''}">
-            <div class="session-header">
-                <div class="${checkClass}" onclick="toggleComplete('${day}','${session.id}')"></div>
-                <div class="session-info">
-                    ${session.time ? `<div class="session-time-label">${session.time}</div>` : ''}
-                    <div class="session-name">${session.name}</div>
-                    <div class="session-desc">${session.desc}</div>
-                </div>
-            </div>
-            ${fieldsHtml}
-            ${notesHtml}
-        </div>`;
+        return '<div class="session-card ' + (completed ? 'completed' : '') + '">' +
+            '<div class="session-header">' +
+                '<div class="session-check ' + (completed ? 'checked' : '') + '" onclick="toggleComplete(\'' + day + '\',\'' + session.id + '\')"></div>' +
+                '<div class="session-info">' +
+                    (session.time ? '<div class="session-time-label">' + session.time + '</div>' : '') +
+                    '<div class="session-name">' + session.name + '</div>' +
+                    '<div class="session-desc">' + session.desc + '</div>' +
+                '</div>' +
+            '</div>' +
+            fieldsHtml +
+            notesHtml +
+        '</div>';
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function renderHistory() {
@@ -904,13 +1474,12 @@
             const dots = DAYS.map(day => {
                 if (!weekData[day]) return '<div class="history-dot"></div>';
                 const plan = PLAN[day];
-                const total = plan.sessions.length;
                 let done = 0;
                 plan.sessions.forEach(s => {
                     if (weekData[day][s.id] && weekData[day][s.id].completed) done++;
                 });
-                const cls = done === total ? 'done' : done > 0 ? 'partial' : '';
-                return `<div class="history-dot ${cls}"></div>`;
+                const cls = done === plan.sessions.length ? 'done' : done > 0 ? 'partial' : '';
+                return '<div class="history-dot ' + cls + '"></div>';
             }).join('');
 
             const totalSessions = DAYS.reduce((sum, d) => sum + PLAN[d].sessions.length, 0);
@@ -923,13 +1492,13 @@
                 }
             });
 
-            return `<div class="history-week" onclick="jumpToWeek('${weekId}')">
-                <div class="history-week-header">
-                    <div class="history-week-label">${getWeekDisplay(weekId)}${isCurrentWeek(weekId) ? ' <span style="color:#f5c842;font-size:0.5rem;">CURRENT</span>' : ''}</div>
-                    <div class="history-completion">${completedSessions}/${totalSessions} sessions</div>
-                </div>
-                <div class="history-days">${dots}</div>
-            </div>`;
+            return '<div class="history-week" onclick="jumpToWeek(\'' + weekId + '\')">' +
+                '<div class="history-week-header">' +
+                    '<div class="history-week-label">' + getWeekDisplay(weekId) + (isCurrentWeek(weekId) ? ' <span style="color:#f5c842;font-size:0.5rem;">CURRENT</span>' : '') + '</div>' +
+                    '<div class="history-completion">' + completedSessions + '/' + totalSessions + ' sessions</div>' +
+                '</div>' +
+                '<div class="history-days">' + dots + '</div>' +
+            '</div>';
         }).join('');
     }
 
@@ -950,28 +1519,30 @@
         render();
     }
 
+    /* ====================
+       EXPORT / IMPORT
+       ==================== */
     function exportData() {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `hyrox-data-${currentWeek}.json`;
+        a.download = 'hyrox-data-' + currentWeek + '.json';
         a.click();
         URL.revokeObjectURL(url);
         const btn = document.getElementById('exportBtn');
         btn.classList.add('success');
         btn.textContent = 'Exported!';
-        setTimeout(() => { btn.classList.remove('success'); btn.textContent = 'Export Data'; }, 2000);
+        setTimeout(() => { btn.classList.remove('success'); btn.textContent = 'Export'; }, 2000);
     }
 
-    function importData(event) {
+    async function importData(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 const imported = JSON.parse(e.target.result);
-                // Merge imported data with existing (imported wins on conflicts)
                 Object.keys(imported).forEach(weekId => {
                     if (!data[weekId]) {
                         data[weekId] = imported[weekId];
@@ -987,7 +1558,16 @@
                         });
                     }
                 });
-                save();
+
+                localStorage.setItem('hyrox-data', JSON.stringify(data));
+
+                // Sync all imported weeks to cloud
+                if (isCloud) {
+                    for (const weekId of Object.keys(imported)) {
+                        await syncWeekToCloud(weekId);
+                    }
+                }
+
                 render();
                 alert('Data imported successfully!');
             } catch (err) {
@@ -998,9 +1578,60 @@
         event.target.value = '';
     }
 
-    // Init
-    setDivision(currentDivision);
-    render();
+    /* ====================
+       INIT
+       ==================== */
+    function startTracker() {
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('signOutBtn').style.display = isCloud ? '' : 'none';
+        setSyncStatus(isCloud ? 'synced' : 'local', isCloud ? 'Synced' : 'Local mode');
+        setDivision(currentDivision);
+        render();
+    }
+
+    async function initApp() {
+        const config = getConfig();
+
+        // No Supabase config — show setup
+        if (!config) {
+            showOverlay('setup');
+            return;
+        }
+
+        // Initialize Supabase client
+        try {
+            sb = window.supabase.createClient(config.url, config.key);
+        } catch (err) {
+            console.error('Supabase init error:', err);
+            showOverlay('setup');
+            return;
+        }
+
+        // Check for existing session
+        showOverlay('loading');
+        const { data: sessionData } = await sb.auth.getSession();
+
+        if (sessionData.session) {
+            currentUser = sessionData.session.user;
+            isCloud = true;
+            await loadCloudData();
+            showOverlay(null);
+            startTracker();
+        } else {
+            showOverlay('auth');
+        }
+
+        // Listen for auth changes (e.g. token refresh)
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                isCloud = false;
+            }
+        });
+    }
+
+    // Start
+    initApp();
     </script>
 </body>
 </html>
