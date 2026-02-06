@@ -687,72 +687,6 @@
     </style>
 </head>
 <body>
-    <!-- SETUP OVERLAY -->
-    <div class="overlay hidden" id="setupOverlay">
-        <div class="setup-card">
-            <div class="setup-title">HYROX</div>
-            <div class="setup-step">Cloud Setup</div>
-
-            <div class="setup-instructions">
-                <ol>
-                    <li>Go to <a href="https://supabase.com" target="_blank">supabase.com</a> and create a free project</li>
-                    <li>Open <strong>SQL Editor</strong> and run the SQL below</li>
-                    <li>Go to <strong>Settings &rarr; API</strong> and copy your URL and anon key</li>
-                    <li>Paste them below</li>
-                </ol>
-            </div>
-
-            <div class="sql-block" id="sqlBlock">-- Run this in Supabase SQL Editor
-
-create table if not exists workouts (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id) on delete cascade not null,
-  week_id text not null,
-  data jsonb not null default '{}',
-  updated_at timestamptz default now(),
-  unique(user_id, week_id)
-);
-
-create table if not exists user_settings (
-  user_id uuid references auth.users(id) on delete cascade primary key,
-  division text default 'pro',
-  updated_at timestamptz default now()
-);
-
-alter table workouts enable row level security;
-alter table user_settings enable row level security;
-
-create policy "Users manage own workouts"
-  on workouts for all
-  using (auth.uid() = user_id);
-
-create policy "Users manage own settings"
-  on user_settings for all
-  using (auth.uid() = user_id);</div>
-
-            <button class="copy-btn" onclick="copySQL()">Copy SQL</button>
-
-            <div class="setup-instructions">
-                <strong>Tip:</strong> For instant signup (no email confirmation), go to
-                <strong>Authentication &rarr; Providers &rarr; Email</strong> and disable <em>Confirm email</em>.
-            </div>
-
-            <div class="setup-divider"></div>
-
-            <div class="setup-field">
-                <label>Supabase Project URL</label>
-                <input type="url" id="setupUrl" placeholder="https://xxxxx.supabase.co">
-            </div>
-            <div class="setup-field">
-                <label>Supabase Anon Key</label>
-                <input type="text" id="setupKey" placeholder="eyJhbGciOi...">
-            </div>
-
-            <button class="setup-btn" onclick="saveSetup()">Connect</button>
-            <div class="setup-error hidden" id="setupError"></div>
-        </div>
-    </div>
-
     <!-- AUTH OVERLAY -->
     <div class="overlay hidden" id="authOverlay">
         <div class="setup-card">
@@ -778,8 +712,7 @@ create policy "Users manage own settings"
             <div class="setup-success hidden" id="authSuccess"></div>
 
             <div class="setup-note">
-                Your workouts sync across all devices.<br>
-                <a href="#" onclick="resetSetup(); return false;" style="color:#555;text-decoration:underline;">Change Supabase config</a>
+                Your workouts sync across all devices.
             </div>
         </div>
     </div>
@@ -1018,53 +951,10 @@ create policy "Users manage own settings"
     let syncTimeout = null;
 
     /* ====================
-       SUPABASE SETUP
+       SUPABASE CONFIG
        ==================== */
-    function getConfig() {
-        try { return JSON.parse(localStorage.getItem('hyrox-supabase')); } catch { return null; }
-    }
-
-    function copySQL() {
-        const sql = document.getElementById('sqlBlock').textContent;
-        navigator.clipboard.writeText(sql).then(() => {
-            const btn = event.target;
-            btn.textContent = 'Copied!';
-            btn.style.borderColor = '#34d399';
-            btn.style.color = '#34d399';
-            setTimeout(() => { btn.textContent = 'Copy SQL'; btn.style.borderColor = ''; btn.style.color = ''; }, 2000);
-        });
-    }
-
-    function saveSetup() {
-        const url = document.getElementById('setupUrl').value.trim();
-        const key = document.getElementById('setupKey').value.trim();
-        const errEl = document.getElementById('setupError');
-
-        if (!url || !key) {
-            errEl.textContent = 'Both fields are required.';
-            errEl.classList.remove('hidden');
-            return;
-        }
-
-        if (!url.includes('supabase')) {
-            errEl.textContent = 'URL should be your Supabase project URL (e.g. https://xxxxx.supabase.co)';
-            errEl.classList.remove('hidden');
-            return;
-        }
-
-        localStorage.setItem('hyrox-supabase', JSON.stringify({ url, key }));
-        errEl.classList.add('hidden');
-        initApp();
-    }
-
-    function resetSetup() {
-        localStorage.removeItem('hyrox-supabase');
-        if (sb) sb.auth.signOut();
-        sb = null;
-        currentUser = null;
-        isCloud = false;
-        showOverlay('setup');
-    }
+    const SUPABASE_URL = 'https://eatryfrdiahywcnpnula.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_kvU242qD2fDCk_Ol1OQ--Q_rYSl43lD';
 
     /* ====================
        AUTH
@@ -1248,7 +1138,6 @@ create policy "Users manage own settings"
        OVERLAY MANAGEMENT
        ==================== */
     function showOverlay(which) {
-        document.getElementById('setupOverlay').classList.toggle('hidden', which !== 'setup');
         document.getElementById('authOverlay').classList.toggle('hidden', which !== 'auth');
         document.getElementById('loadingOverlay').classList.toggle('hidden', which !== 'loading');
         document.getElementById('mainApp').classList.toggle('hidden', which !== null);
@@ -1590,20 +1479,11 @@ create policy "Users manage own settings"
     }
 
     async function initApp() {
-        const config = getConfig();
-
-        // No Supabase config — show setup
-        if (!config) {
-            showOverlay('setup');
-            return;
-        }
-
         // Initialize Supabase client
         try {
-            sb = window.supabase.createClient(config.url, config.key);
+            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         } catch (err) {
             console.error('Supabase init error:', err);
-            showOverlay('setup');
             return;
         }
 
