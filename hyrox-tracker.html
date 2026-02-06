@@ -1,1001 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HYROX Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    gold: '#f5c842',
+                    hyrox: '#ff6b35',
+                    surface: '#141414',
+                    dark: '#0a0a0a',
+                    dim: '#1e1e1e',
+                }
+            }
+        },
+        safelist: [
+            'bg-emerald-400','bg-gold','bg-gold/5','bg-gold/15',
+            'bg-[#333]','bg-[#222]',
+            'bg-indigo-500/15','bg-emerald-400/15','bg-hyrox/15','bg-pink-500/15','bg-slate-500/10',
+            'border-emerald-400','border-emerald-400/30','border-gold','border-[#222]','border-[#333]',
+            'text-dark','text-gold','text-hyrox','text-emerald-400','text-red-500',
+            'text-gray-500','text-gray-600',
+            'text-indigo-400','text-pink-500','text-slate-500',
+            'opacity-0','opacity-100',
+            'block','hidden',
+        ]
+    }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overflow-x: hidden; }
-
-        body {
-            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
-            -webkit-text-size-adjust: 100%;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        h1 {
-            font-size: 1.6rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 6px;
-            background: linear-gradient(135deg, #f5c842, #ff6b35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1;
-            margin-bottom: 4px;
-        }
-
-        .subtitle {
-            font-size: 0.6rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: #555;
-        }
-
-        /* Week Navigation */
-        .week-nav {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .week-nav button {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            color: #ccc;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .week-nav button:hover { border-color: #f5c842; color: #f5c842; }
-
-        .week-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #aaa;
-            text-align: center;
-        }
-
-        .week-label .current-badge {
-            font-size: 0.5rem;
-            background: rgba(245, 200, 66, 0.15);
-            color: #f5c842;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            background: #141414;
-            border: 1px solid #222;
-            color: #666;
-            padding: 8px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-        .tab:hover { border-color: #444; color: #aaa; }
-        .tab.active { border-color: #f5c842; color: #f5c842; background: rgba(245, 200, 66, 0.05); }
-
-        .tab .completion {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            margin-left: 6px;
-            background: #333;
-        }
-
-        .tab .completion.done { background: #34d399; }
-        .tab .completion.partial { background: #f5c842; }
-
-        /* Day Panel */
-        .day-panel {
-            display: none;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .day-panel.active { display: block; }
-
-        .day-title {
-            font-size: 1rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
-
-        .day-tags {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-
-        .day-tag {
-            font-size: 0.5rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .tag-strength { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-        .tag-stations { background: rgba(245, 200, 66, 0.15); color: #f5c842; }
-        .tag-recovery { background: rgba(52, 211, 153, 0.15); color: #34d399; }
-        .tag-run { background: rgba(255, 107, 53, 0.15); color: #ff6b35; }
-        .tag-rest { background: rgba(148, 163, 184, 0.1); color: #64748b; }
-        .tag-speed { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
-
-        /* Session Card */
-        .session-card {
-            background: #141414;
-            border: 1px solid #222;
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 10px;
-        }
-
-        .session-card.completed { border-color: rgba(52, 211, 153, 0.3); }
-
-        .session-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .session-check {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #333;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.2s;
-        }
-
-        .session-check:hover { border-color: #34d399; }
-        .session-check.checked { background: #34d399; border-color: #34d399; }
-        .session-check.checked::after { content: '\2713'; color: #0a0a0a; font-size: 0.7rem; font-weight: 700; }
-
-        .session-info { flex: 1; }
-
-        .session-time-label {
-            font-size: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #555;
-        }
-
-        .session-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #ccc;
-        }
-
-        .session-desc {
-            font-size: 0.65rem;
-            color: #666;
-            margin-top: 2px;
-        }
-
-        /* Log Fields */
-        .log-fields {
-            margin-top: 12px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 8px;
-        }
-
-        .log-field {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .log-field label {
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #555;
-            font-weight: 600;
-        }
-
-        .log-field input, .log-field textarea {
-            background: #1e1e1e;
-            border: 1px solid #2a2a2a;
-            color: #ccc;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .log-field input:focus, .log-field textarea:focus {
-            border-color: #f5c842;
-        }
-
-        .log-field input::placeholder, .log-field textarea::placeholder {
-            color: #444;
-        }
-
-        .notes-field {
-            grid-column: 1 / -1;
-        }
-
-        .notes-field textarea {
-            width: 100%;
-            resize: vertical;
-            min-height: 40px;
-        }
-
-        /* Station pills in log */
-        .station-log {
-            margin-top: 12px;
-        }
-
-        .station-log-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 0;
-            border-bottom: 1px solid #1a1a1a;
-        }
-
-        .station-log-item:last-child { border-bottom: none; }
-
-        .station-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #888;
-            min-width: 120px;
-            flex-shrink: 0;
-        }
-
-        .station-label .spec {
-            color: #555;
-            font-size: 0.55rem;
-            font-weight: 600;
-            display: block;
-        }
-
-        .station-label.run-label {
-            color: #ff6b35;
-        }
-
-        .station-input {
-            background: #1e1e1e;
-            border: 1px solid #2a2a2a;
-            color: #ccc;
-            padding: 5px 8px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            font-family: inherit;
-            outline: none;
-            width: 90px;
-            min-width: 0;
-            transition: border-color 0.2s;
-        }
-
-        .station-input:focus { border-color: #f5c842; }
-        .station-input::placeholder { color: #444; }
-
-        /* Previous value badge */
-        .prev-val {
-            font-size: 0.5rem;
-            color: #f5c842;
-            opacity: 0.6;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .station-log-item .prev-val {
-            margin-left: auto;
-            margin-right: 4px;
-        }
-
-        .log-field .prev-val {
-            display: block;
-            margin-top: 1px;
-        }
-
-        /* History */
-        .history-panel {
-            display: none;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .history-panel.active { display: block; }
-
-        .history-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-
-        .history-week {
-            background: #141414;
-            border: 1px solid #222;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-
-        .history-week:hover { border-color: #333; }
-
-        .history-week-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-week-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .history-completion {
-            font-size: 0.6rem;
-            color: #34d399;
-        }
-
-        .history-days {
-            display: flex;
-            gap: 4px;
-            margin-top: 8px;
-        }
-
-        .history-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #222;
-        }
-
-        .history-dot.done { background: #34d399; }
-        .history-dot.partial { background: #f5c842; }
-
-        /* Save indicator */
-        .save-indicator {
-            position: fixed;
-            bottom: 16px;
-            right: 16px;
-            font-size: 0.6rem;
-            color: #34d399;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-
-        .save-indicator.show { opacity: 1; }
-
-        /* Sync buttons */
-        .sync-bar {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .sync-btn {
-            background: #1e1e1e;
-            border: 1px solid #2a2a2a;
-            color: #666;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.6rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
-        }
-
-        .sync-btn:hover { border-color: #f5c842; color: #f5c842; }
-
-        .sync-btn.success { border-color: #34d399; color: #34d399; }
-
-        #importInput { display: none; }
-
-        .sync-status {
-            font-size: 0.55rem;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .sync-status.synced { color: #34d399; }
-        .sync-status.syncing { color: #f5c842; }
-        .sync-status.error { color: #ef4444; }
-        .sync-status.local { color: #555; }
-
-        /* Division selector */
-        .division-bar {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            margin-bottom: 16px;
-        }
-
-        .div-btn {
-            background: #141414;
-            border: 1px solid #222;
-            color: #555;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.6rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
-        }
-
-        .div-btn:hover { border-color: #444; color: #aaa; }
-        .div-btn.active { border-color: #f5c842; color: #f5c842; background: rgba(245, 200, 66, 0.05); }
-
-        /* Tips */
-        .tips {
-            max-width: 700px;
-            margin: 16px auto 0;
-            padding: 8px 14px;
-            background: #111;
-            border-radius: 8px;
-            border: 1px solid #1a1a1a;
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .tip {
-            font-size: 0.55rem;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .tip-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #f5c842;
-            flex-shrink: 0;
-        }
-
-        /* ==================== */
-        /* MOBILE DAY SELECT    */
-        /* ==================== */
-        .mobile-day-select {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .mobile-day-select select {
-            flex: 1;
-            min-width: 0;
-            background: #141414;
-            border: 1px solid #333;
-            color: #f5c842;
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 16px; /* prevents iOS zoom */
-            font-weight: 700;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .mobile-day-select .sync-status {
-            flex-shrink: 0;
-            font-size: 0.6rem;
-        }
-
-        .mobile-settings-btn {
-            background: #141414;
-            border: 1px solid #333;
-            color: #888;
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .mobile-settings-btn:hover, .mobile-settings-btn.active { border-color: #f5c842; color: #f5c842; }
-
-        .settings-drawer {
-            /* On desktop: just a plain container, always visible */
-        }
-
-        .settings-drawer.hidden {
-            /* On desktop: hidden class is ignored — always visible */
-        }
-
-        /* ==================== */
-        /* MOBILE RESPONSIVE    */
-        /* ==================== */
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            h1 { font-size: 1.3rem; letter-spacing: 3px; }
-            .subtitle { font-size: 0.55rem; letter-spacing: 2px; }
-            .header { margin-bottom: 8px; }
-
-            /* Week nav — compact */
-            .week-nav { gap: 4px; margin-bottom: 10px; }
-            .week-nav button {
-                padding: 10px 12px;
-                font-size: 0.8rem;
-                border-radius: 8px;
-                min-width: 44px;
-            }
-            .week-label {
-                font-size: 0.75rem;
-                min-width: 0;
-                flex: 1;
-                text-align: center;
-            }
-
-            /* Show mobile dropdown, hide desktop tabs */
-            .mobile-day-select { display: flex; }
-            .tabs { display: none; }
-
-            /* Settings drawer on mobile: styled + toggleable */
-            .settings-drawer {
-                margin-bottom: 12px;
-                padding: 12px;
-                background: #111;
-                border: 1px solid #1e1e1e;
-                border-radius: 10px;
-            }
-            .settings-drawer.hidden { display: none; }
-
-            /* Division buttons — 2x2 grid so they fit */
-            .settings-drawer .division-bar {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 6px;
-                margin-bottom: 10px;
-            }
-            .settings-drawer .division-bar .div-btn {
-                padding: 10px 8px;
-                font-size: 0.65rem;
-                text-align: center;
-                width: 100%;
-            }
-            .settings-drawer .sync-bar {
-                margin-bottom: 0;
-                gap: 6px;
-            }
-            .settings-drawer .sync-bar .sync-btn {
-                padding: 10px 12px;
-                font-size: 0.65rem;
-            }
-
-            /* Day panel — full width */
-            .day-panel { max-width: 100%; }
-            .day-title { font-size: 1.05rem; letter-spacing: 1px; }
-            .day-tags { gap: 6px; margin-bottom: 12px; }
-            .day-tag { font-size: 0.6rem; padding: 4px 10px; }
-
-            /* Session cards — bigger touch targets */
-            .session-card {
-                padding: 14px 12px;
-                margin-bottom: 10px;
-                border-radius: 10px;
-            }
-            .session-header { gap: 10px; margin-bottom: 8px; }
-            .session-check { width: 32px; height: 32px; }
-            .session-check.checked::after { font-size: 0.9rem; }
-            .session-name { font-size: 0.95rem; }
-            .session-desc { font-size: 0.75rem; margin-top: 2px; }
-            .session-time-label { font-size: 0.6rem; }
-
-            /* Station inputs — stacked full-width */
-            .station-log { margin-top: 10px; }
-            .station-log-item {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 4px;
-                padding: 10px 0;
-            }
-            .station-label {
-                min-width: 0;
-                width: 100%;
-                font-size: 0.85rem;
-                display: flex;
-                align-items: baseline;
-                gap: 6px;
-            }
-            .station-label .spec {
-                font-size: 0.65rem;
-                display: inline;
-            }
-            .station-log-item .prev-val {
-                margin-left: 0;
-                font-size: 0.65rem;
-                order: 3;
-            }
-            .station-input {
-                width: 100%;
-                padding: 12px;
-                font-size: 16px; /* prevents iOS zoom on focus */
-                border-radius: 8px;
-            }
-
-            /* Log fields — single column on narrow screens */
-            .log-fields {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                margin-top: 10px;
-            }
-            .log-field label { font-size: 0.65rem; }
-            .log-field input, .log-field textarea {
-                padding: 12px;
-                font-size: 16px; /* prevents iOS zoom */
-                border-radius: 8px;
-            }
-            .log-field .prev-val { font-size: 0.6rem; }
-            .notes-field textarea { min-height: 50px; }
-
-            /* History */
-            .history-panel { max-width: 100%; }
-            .history-week { padding: 14px 12px; }
-            .history-week-header { flex-direction: column; gap: 4px; align-items: flex-start; }
-
-            /* Tips — hide on mobile */
-            .tips { display: none !important; }
-
-            /* Auth overlay */
-            .overlay { padding: 16px; }
-            .setup-card { padding: 24px 18px; }
-            .setup-field input { padding: 14px; font-size: 16px; }
-            .setup-btn { padding: 16px; font-size: 0.9rem; }
-            .auth-toggle-btn { padding: 12px; font-size: 0.75rem; }
-        }
-
-        /* ==================== */
-        /* OVERLAY SCREENS      */
-        /* ==================== */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: #0a0a0a;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .overlay.hidden { display: none; }
-
-        .setup-card {
-            background: #141414;
-            border: 1px solid #222;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 480px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .setup-title {
-            font-size: 1.2rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            background: linear-gradient(135deg, #f5c842, #ff6b35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            margin-bottom: 4px;
-        }
-
-        .setup-step {
-            font-size: 0.6rem;
-            text-align: center;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 24px;
-        }
-
-        .setup-instructions {
-            font-size: 0.75rem;
-            color: #888;
-            line-height: 1.8;
-            margin-bottom: 20px;
-        }
-
-        .setup-instructions ol {
-            padding-left: 20px;
-        }
-
-        .setup-instructions a {
-            color: #f5c842;
-            text-decoration: none;
-        }
-
-        .sql-block {
-            background: #0a0a0a;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.55rem;
-            color: #888;
-            overflow-x: auto;
-            white-space: pre;
-            margin: 12px 0;
-            max-height: 180px;
-            overflow-y: auto;
-            line-height: 1.5;
-        }
-
-        .copy-btn {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            color: #ccc;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.65rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            display: block;
-        }
-
-        .copy-btn:hover { border-color: #f5c842; color: #f5c842; }
-
-        .setup-field {
-            margin-bottom: 14px;
-        }
-
-        .setup-field label {
-            display: block;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #555;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .setup-field input {
-            width: 100%;
-            background: #1e1e1e;
-            border: 1px solid #2a2a2a;
-            color: #ccc;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .setup-field input:focus { border-color: #f5c842; }
-
-        .setup-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #f5c842, #ff6b35);
-            border: none;
-            color: #0a0a0a;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .setup-btn:hover { opacity: 0.9; }
-        .setup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .setup-error {
-            color: #ef4444;
-            font-size: 0.7rem;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .setup-success {
-            color: #34d399;
-            font-size: 0.7rem;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .setup-note {
-            font-size: 0.6rem;
-            color: #555;
-            text-align: center;
-            margin-top: 16px;
-            line-height: 1.6;
-        }
-
-        .setup-divider {
-            height: 1px;
-            background: #222;
-            margin: 20px 0;
-        }
-
-        .auth-toggle {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 20px;
-        }
-
-        .auth-toggle-btn {
-            flex: 1;
-            background: #1e1e1e;
-            border: 1px solid #222;
-            color: #555;
-            padding: 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .auth-toggle-btn.active { border-color: #f5c842; color: #f5c842; }
-
-        .loading-text {
-            text-align: center;
-            color: #555;
-            font-size: 0.8rem;
-            padding: 40px 0;
-        }
-    </style>
+    <style>body { -webkit-text-size-adjust: 100%; }</style>
 </head>
-<body>
+<body class="bg-dark text-gray-200 min-h-screen p-3 md:p-5 overflow-x-hidden font-sans">
+
     <!-- AUTH OVERLAY -->
-    <div class="overlay hidden" id="authOverlay">
-        <div class="setup-card">
-            <div class="setup-title">HYROX</div>
-            <div class="setup-step">Sign In</div>
+    <div class="fixed inset-0 bg-dark z-50 flex items-center justify-center p-4 hidden" id="authOverlay">
+        <div class="bg-surface border border-[#222] rounded-2xl p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-extrabold uppercase tracking-[4px] bg-gradient-to-br from-gold to-hyrox bg-clip-text text-transparent text-center mb-1">HYROX</h2>
+            <p class="text-[0.6rem] text-center text-gray-600 uppercase tracking-[2px] mb-6">Sign In</p>
 
-            <div class="auth-toggle">
-                <button class="auth-toggle-btn active" id="authSignIn" onclick="setAuthMode('signin')">Sign In</button>
-                <button class="auth-toggle-btn" id="authSignUp" onclick="setAuthMode('signup')">Sign Up</button>
+            <div class="flex gap-1 mb-5">
+                <button class="flex-1 bg-dim border border-gold text-gold py-3 rounded-lg text-xs font-semibold uppercase text-center transition-all" id="authSignIn" onclick="setAuthMode('signin')">Sign In</button>
+                <button class="flex-1 bg-dim border border-[#222] text-gray-600 py-3 rounded-lg text-xs font-semibold uppercase text-center transition-all" id="authSignUp" onclick="setAuthMode('signup')">Sign Up</button>
             </div>
 
-            <div class="setup-field">
-                <label>Email</label>
-                <input type="email" id="authEmail" placeholder="you@example.com">
+            <div class="mb-3">
+                <label class="block text-[0.6rem] uppercase tracking-wide text-gray-600 font-semibold mb-1">Email</label>
+                <input type="email" id="authEmail" placeholder="you@example.com"
+                       class="w-full bg-dim border border-[#2a2a2a] text-gray-400 p-3 rounded-lg text-base outline-none focus:border-gold transition-colors">
             </div>
-            <div class="setup-field">
-                <label>Password</label>
-                <input type="password" id="authPassword" placeholder="Your password">
+            <div class="mb-3">
+                <label class="block text-[0.6rem] uppercase tracking-wide text-gray-600 font-semibold mb-1">Password</label>
+                <input type="password" id="authPassword" placeholder="Your password"
+                       class="w-full bg-dim border border-[#2a2a2a] text-gray-400 p-3 rounded-lg text-base outline-none focus:border-gold transition-colors">
             </div>
 
-            <button class="setup-btn" onclick="doAuth()" id="authBtn">Sign In</button>
-            <div class="setup-error hidden" id="authError"></div>
-            <div class="setup-success hidden" id="authSuccess"></div>
+            <button class="w-full bg-gradient-to-r from-gold to-hyrox text-dark p-3 rounded-lg text-sm font-bold uppercase tracking-[2px] mt-2 cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onclick="doAuth()" id="authBtn">Sign In</button>
+            <div class="text-red-500 text-xs mt-2 text-center hidden" id="authError"></div>
+            <div class="text-emerald-400 text-xs mt-2 text-center hidden" id="authSuccess"></div>
 
-            <div class="setup-note">
+            <p class="text-[0.6rem] text-gray-600 text-center mt-4 leading-relaxed">
                 Your workouts sync across all devices.
-            </div>
+            </p>
         </div>
     </div>
 
     <!-- LOADING OVERLAY -->
-    <div class="overlay hidden" id="loadingOverlay">
-        <div class="loading-text">Loading your data...</div>
+    <div class="fixed inset-0 bg-dark z-50 flex items-center justify-center p-5 hidden" id="loadingOverlay">
+        <p class="text-gray-600 text-sm">Loading your data...</p>
     </div>
 
     <!-- MAIN TRACKER -->
     <div id="mainApp" class="hidden">
-        <div class="header">
-            <h1>HYROX</h1>
-            <div class="subtitle" id="subtitleText">Training Tracker &middot; Pro Division</div>
+        <!-- Header -->
+        <div class="text-center mb-2 md:mb-4">
+            <h1 class="text-xl md:text-2xl font-extrabold uppercase tracking-[4px] md:tracking-[6px] bg-gradient-to-br from-gold to-hyrox bg-clip-text text-transparent leading-none mb-1">HYROX</h1>
+            <p class="text-[0.55rem] md:text-[0.6rem] tracking-[2px] md:tracking-[3px] uppercase text-gray-600" id="subtitleText">Training Tracker &middot; Pro Division</p>
         </div>
 
-        <div class="week-nav">
-            <button onclick="changeWeek(-1)">&larr; Prev</button>
-            <div class="week-label" id="weekLabel"></div>
-            <button onclick="changeWeek(1)">Next &rarr;</button>
+        <!-- Week Nav -->
+        <div class="flex items-center justify-center gap-1 md:gap-4 mb-3 md:mb-4">
+            <button onclick="changeWeek(-1)" class="bg-dim border border-[#333] text-gray-400 px-3 py-2.5 rounded-lg text-xs font-semibold cursor-pointer hover:border-gold hover:text-gold min-w-[44px]">&larr; Prev</button>
+            <div class="text-xs md:text-sm font-semibold text-gray-500 text-center flex-1 md:flex-initial" id="weekLabel"></div>
+            <button onclick="changeWeek(1)" class="bg-dim border border-[#333] text-gray-400 px-3 py-2.5 rounded-lg text-xs font-semibold cursor-pointer hover:border-gold hover:text-gold min-w-[44px]">Next &rarr;</button>
         </div>
 
-        <!-- Mobile day selector -->
-        <div class="mobile-day-select" id="mobileDaySelect">
-            <select id="dayDropdown" onchange="selectDay(this.value)"></select>
-            <span class="sync-status synced" id="syncStatusMobile">Synced</span>
-            <button class="mobile-settings-btn" onclick="toggleMobileSettings()">&#9881;</button>
+        <!-- Mobile Day Selector -->
+        <div class="flex md:hidden items-center gap-2 mb-3">
+            <select id="dayDropdown" onchange="selectDay(this.value)"
+                    class="flex-1 min-w-0 bg-surface border border-[#333] text-gold p-3 rounded-xl text-base font-bold outline-none">
+            </select>
+            <span class="text-emerald-400 text-[0.6rem] font-semibold flex-shrink-0" id="syncStatusMobile">Synced</span>
+            <button onclick="toggleMobileSettings()" class="mobile-settings-btn bg-surface border border-[#333] text-gray-500 w-11 h-11 rounded-xl text-lg cursor-pointer flex items-center justify-center flex-shrink-0 hover:border-gold hover:text-gold transition-colors">&#9881;</button>
         </div>
 
-        <!-- Settings drawer (division, sync, etc.) -->
-        <div class="settings-drawer hidden" id="settingsDrawer">
-            <div class="division-bar">
-                <button class="div-btn active" onclick="setDivision('pro')" id="div-pro">Pro</button>
-                <button class="div-btn" onclick="setDivision('open')" id="div-open">Men's Open</button>
-                <button class="div-btn" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
-                <button class="div-btn" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
+        <!-- Settings Drawer: hidden on mobile (toggled), always visible on desktop -->
+        <div id="settingsDrawer" class="md:block hidden mb-3 p-3 md:p-0 bg-[#111] md:bg-transparent border border-[#1e1e1e] md:border-0 rounded-xl md:rounded-none">
+            <div class="grid grid-cols-2 md:flex md:justify-center gap-1.5 md:gap-1 mb-3 md:mb-4">
+                <button class="div-btn bg-surface border border-gold text-gold bg-gold/5 py-2.5 md:py-1.5 px-2 md:px-3 rounded-lg text-[0.65rem] font-semibold uppercase tracking-wide text-center cursor-pointer transition-all" onclick="setDivision('pro')" id="div-pro">Pro</button>
+                <button class="div-btn bg-surface border border-[#222] text-gray-600 py-2.5 md:py-1.5 px-2 md:px-3 rounded-lg text-[0.65rem] font-semibold uppercase tracking-wide text-center cursor-pointer transition-all" onclick="setDivision('open')" id="div-open">Men's Open</button>
+                <button class="div-btn bg-surface border border-[#222] text-gray-600 py-2.5 md:py-1.5 px-2 md:px-3 rounded-lg text-[0.65rem] font-semibold uppercase tracking-wide text-center cursor-pointer transition-all" onclick="setDivision('doubles')" id="div-doubles">Doubles</button>
+                <button class="div-btn bg-surface border border-[#222] text-gray-600 py-2.5 md:py-1.5 px-2 md:px-3 rounded-lg text-[0.65rem] font-semibold uppercase tracking-wide text-center cursor-pointer transition-all" onclick="setDivision('doubles-pro')" id="div-doubles-pro">Doubles Pro</button>
             </div>
-            <div class="sync-bar" id="syncBar">
-                <span class="sync-status synced" id="syncStatus">Synced</span>
-                <button class="sync-btn" onclick="signOut()" id="signOutBtn">Sign Out</button>
-                <button class="sync-btn" onclick="exportData()" id="exportBtn">Export</button>
-                <button class="sync-btn" onclick="document.getElementById('importInput').click()">Import</button>
-                <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+            <div class="flex justify-center gap-2 items-center flex-wrap">
+                <span class="text-emerald-400 text-[0.55rem] font-semibold tracking-wide" id="syncStatus">Synced</span>
+                <button class="bg-dim border border-[#2a2a2a] text-gray-500 px-3 py-2.5 md:py-1.5 rounded-md text-[0.65rem] font-semibold uppercase tracking-wide cursor-pointer transition-all hover:border-gold hover:text-gold" onclick="signOut()" id="signOutBtn">Sign Out</button>
+                <button class="bg-dim border border-[#2a2a2a] text-gray-500 px-3 py-2.5 md:py-1.5 rounded-md text-[0.65rem] font-semibold uppercase tracking-wide cursor-pointer transition-all hover:border-gold hover:text-gold" onclick="exportData()" id="exportBtn">Export</button>
+                <button class="bg-dim border border-[#2a2a2a] text-gray-500 px-3 py-2.5 md:py-1.5 rounded-md text-[0.65rem] font-semibold uppercase tracking-wide cursor-pointer transition-all hover:border-gold hover:text-gold" onclick="document.getElementById('importInput').click()">Import</button>
+                <input type="file" id="importInput" accept=".json" onchange="importData(event)" class="hidden">
             </div>
         </div>
 
-        <div class="tabs" id="tabs"></div>
+        <!-- Desktop Tabs -->
+        <div class="hidden md:flex gap-1 mb-4 justify-center flex-wrap" id="tabs"></div>
 
+        <!-- Day Panels (rendered by JS) -->
         <div id="dayPanels"></div>
 
-        <div class="history-panel" id="historyPanel">
-            <div class="history-title">Weekly History</div>
+        <!-- History Panel -->
+        <div class="max-w-2xl mx-auto hidden" id="historyPanel">
+            <h3 class="text-sm font-bold uppercase tracking-[2px] mb-4 text-center">Weekly History</h3>
             <div id="historyList"></div>
         </div>
 
-        <div class="tips">
-            <div class="tip"><span class="tip-dot"></span>Train sleds heavier than race weight</div>
-            <div class="tip"><span class="tip-dot"></span>Deload every 3-4 weeks</div>
-            <div class="tip"><span class="tip-dot"></span>Full race sim every 4-6 weeks</div>
-            <div class="tip"><span class="tip-dot"></span>80/20 intensity split</div>
-            <div class="tip"><span class="tip-dot"></span>Roxzone transitions &lt;10s</div>
+        <!-- Tips (desktop only) -->
+        <div class="hidden md:flex max-w-2xl mx-auto mt-4 p-2 px-3 bg-[#111] rounded-lg border border-[#1a1a1a] gap-4 flex-wrap">
+            <div class="text-[0.55rem] text-gray-600 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-gold flex-shrink-0"></span>Train sleds heavier than race weight</div>
+            <div class="text-[0.55rem] text-gray-600 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-gold flex-shrink-0"></span>Deload every 3-4 weeks</div>
+            <div class="text-[0.55rem] text-gray-600 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-gold flex-shrink-0"></span>Full race sim every 4-6 weeks</div>
+            <div class="text-[0.55rem] text-gray-600 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-gold flex-shrink-0"></span>80/20 intensity split</div>
+            <div class="text-[0.55rem] text-gray-600 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-gold flex-shrink-0"></span>Roxzone transitions &lt;10s</div>
         </div>
 
-        <div class="save-indicator" id="saveIndicator">Saved</div>
+        <!-- Save indicator -->
+        <div class="fixed bottom-4 right-4 text-xs text-emerald-400 opacity-0 transition-opacity duration-300 pointer-events-none" id="saveIndicator">Saved</div>
     </div>
 
     <script>
@@ -1162,14 +303,21 @@
     };
 
     const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-    const TAG_CLASSES = { strength:'tag-strength', stations:'tag-stations', recovery:'tag-recovery', run:'tag-run', rest:'tag-rest', speed:'tag-speed' };
+    const TAG_CLASSES = {
+        strength: 'bg-indigo-500/15 text-indigo-400',
+        stations: 'bg-gold/15 text-gold',
+        recovery: 'bg-emerald-400/15 text-emerald-400',
+        run: 'bg-hyrox/15 text-hyrox',
+        rest: 'bg-slate-500/10 text-slate-500',
+        speed: 'bg-pink-500/15 text-pink-500',
+    };
 
     /* ====================
        STATE
        ==================== */
-    let sb = null;           // Supabase client
-    let currentUser = null;  // Logged-in user
-    let isCloud = false;     // Cloud mode active
+    let sb = null;
+    let currentUser = null;
+    let isCloud = false;
 
     let currentDivision = 'pro';
     let currentWeek = getWeekId(new Date());
@@ -1191,8 +339,19 @@
 
     function setAuthMode(mode) {
         authMode = mode;
-        document.getElementById('authSignIn').classList.toggle('active', mode === 'signin');
-        document.getElementById('authSignUp').classList.toggle('active', mode === 'signup');
+        const signin = document.getElementById('authSignIn');
+        const signup = document.getElementById('authSignUp');
+
+        signin.classList.toggle('border-gold', mode === 'signin');
+        signin.classList.toggle('text-gold', mode === 'signin');
+        signin.classList.toggle('border-[#222]', mode !== 'signin');
+        signin.classList.toggle('text-gray-600', mode !== 'signin');
+
+        signup.classList.toggle('border-gold', mode === 'signup');
+        signup.classList.toggle('text-gold', mode === 'signup');
+        signup.classList.toggle('border-[#222]', mode !== 'signup');
+        signup.classList.toggle('text-gray-600', mode !== 'signup');
+
         document.getElementById('authBtn').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
         document.getElementById('authError').classList.add('hidden');
         document.getElementById('authSuccess').classList.add('hidden');
@@ -1271,7 +430,6 @@
         setSyncStatus('syncing', 'Loading...');
 
         try {
-            // Load workouts
             const { data: rows, error } = await sb
                 .from('workouts')
                 .select('week_id, data')
@@ -1282,11 +440,9 @@
             data = {};
             rows.forEach(row => { data[row.week_id] = row.data; });
 
-            // Check if we have local data to migrate
             const localData = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
             if (Object.keys(localData).length > 0 && Object.keys(data).length === 0) {
                 data = localData;
-                // Upload local data to cloud
                 for (const weekId of Object.keys(data)) {
                     await sb.from('workouts').upsert({
                         user_id: currentUser.id,
@@ -1297,10 +453,8 @@
                 }
             }
 
-            // Cache locally
             localStorage.setItem('hyrox-data', JSON.stringify(data));
 
-            // Load division setting
             const { data: settings } = await sb
                 .from('user_settings')
                 .select('division')
@@ -1314,7 +468,6 @@
             setSyncStatus('synced', 'Synced');
         } catch (err) {
             console.error('Load error:', err);
-            // Fall back to localStorage
             data = JSON.parse(localStorage.getItem('hyrox-data') || '{}');
             setSyncStatus('error', 'Sync error');
         }
@@ -1355,16 +508,15 @@
     }
 
     function setSyncStatus(cls, text) {
-        const el = document.getElementById('syncStatus');
-        if (el) {
-            el.className = 'sync-status ' + cls;
-            el.textContent = text;
-        }
-        const mobileEl = document.getElementById('syncStatusMobile');
-        if (mobileEl) {
-            mobileEl.className = 'sync-status ' + cls;
-            mobileEl.textContent = text;
-        }
+        const colorMap = { synced: 'text-emerald-400', syncing: 'text-gold', error: 'text-red-500', local: 'text-gray-600' };
+        const color = colorMap[cls] || 'text-gray-600';
+        ['syncStatus', 'syncStatusMobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.className = 'text-[0.55rem] font-semibold tracking-wide flex-shrink-0 ' + color;
+                el.textContent = text;
+            }
+        });
     }
 
     /* ====================
@@ -1388,8 +540,15 @@
     function setDivision(div) {
         currentDivision = div;
         localStorage.setItem('hyrox-division', div);
-        document.querySelectorAll('.div-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('div-' + div).classList.add('active');
+        const active = ['border-gold', 'text-gold', 'bg-gold/5'];
+        const inactive = ['border-[#222]', 'text-gray-600'];
+        document.querySelectorAll('.div-btn').forEach(b => {
+            b.classList.remove(...active, ...inactive);
+            b.classList.add(...inactive);
+        });
+        const btn = document.getElementById('div-' + div);
+        btn.classList.remove(...inactive);
+        btn.classList.add(...active);
         document.getElementById('subtitleText').innerHTML = 'Training Tracker &middot; ' + DIV_LABELS[div];
         if (isCloud) syncDivisionToCloud();
         render();
@@ -1438,12 +597,9 @@
     }
 
     function save() {
-        // Always save to localStorage (cache / offline)
         localStorage.setItem('hyrox-data', JSON.stringify(data));
         showSaveIndicator();
-        updateTabs();
 
-        // Debounced cloud sync
         if (isCloud) {
             clearTimeout(syncTimeout);
             setSyncStatus('syncing', 'Syncing...');
@@ -1453,8 +609,12 @@
 
     function showSaveIndicator() {
         const el = document.getElementById('saveIndicator');
-        el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 1200);
+        el.classList.remove('opacity-0');
+        el.classList.add('opacity-100');
+        setTimeout(() => {
+            el.classList.remove('opacity-100');
+            el.classList.add('opacity-0');
+        }, 1200);
     }
 
     function isSessionCompleted(day, sessionId) {
@@ -1480,34 +640,31 @@
         setSessionData(day, sessionId, key, value);
     }
 
-    function updateTabs() {
-        DAYS.forEach(day => {
-            const dot = document.querySelector('.tab[data-day="' + day + '"] .completion');
-            if (dot) {
-                const comp = getDayCompletion(day);
-                dot.className = 'completion' + (comp !== 'none' ? ' ' + comp : '');
-            }
-        });
-    }
-
     /* ====================
        RENDER
        ==================== */
     function render() {
+        // Week label
         const weekLabel = document.getElementById('weekLabel');
         weekLabel.innerHTML = getWeekDisplay(currentWeek) +
-            (isCurrentWeek(currentWeek) ? '<span class="current-badge">Current</span>' : '');
+            (isCurrentWeek(currentWeek) ? '<span class="text-[0.5rem] bg-gold/15 text-gold px-1.5 py-0.5 rounded-full ml-1.5 uppercase tracking-wide">Current</span>' : '');
 
         // Desktop tabs
         const tabsEl = document.getElementById('tabs');
         tabsEl.innerHTML = DAYS.map(day => {
             const plan = PLAN[day];
             const comp = getDayCompletion(day);
-            return '<div class="tab ' + (day === activeDay && !showHistory ? 'active' : '') + '" data-day="' + day + '" onclick="selectDay(\'' + day + '\')">' +
+            const isActive = day === activeDay && !showHistory;
+            const cls = isActive ? 'border-gold text-gold bg-gold/5' : 'border-[#222] text-gray-600 hover:border-gray-500 hover:text-gray-400';
+            const dot = comp === 'done' ? 'bg-emerald-400' : comp === 'partial' ? 'bg-gold' : 'bg-[#333]';
+            return '<div class="bg-surface border rounded-lg px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-wide cursor-pointer transition-all ' + cls + '" data-day="' + day + '" onclick="selectDay(\'' + day + '\')">' +
                 plan.name +
-                '<span class="completion ' + (comp !== 'none' ? comp : '') + '"></span>' +
+                '<span class="completion inline-block w-1.5 h-1.5 rounded-full ml-1.5 ' + dot + '"></span>' +
             '</div>';
-        }).join('') + '<div class="tab ' + (showHistory ? 'active' : '') + '" onclick="selectDay(\'history\')">History</div>';
+        }).join('') +
+        '<div class="bg-surface border rounded-lg px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-wide cursor-pointer transition-all ' +
+            (showHistory ? 'border-gold text-gold bg-gold/5' : 'border-[#222] text-gray-600 hover:border-gray-500 hover:text-gray-400') +
+        '" onclick="selectDay(\'history\')">History</div>';
 
         // Mobile dropdown
         const dropdown = document.getElementById('dayDropdown');
@@ -1522,19 +679,23 @@
             '<option value="history"' + (showHistory ? ' selected' : '') + '>History</option>';
         }
 
+        // Day panels
         const panelsEl = document.getElementById('dayPanels');
         panelsEl.innerHTML = DAYS.map(day => {
             const plan = PLAN[day];
             const isActive = day === activeDay && !showHistory;
-            return '<div class="day-panel ' + (isActive ? 'active' : '') + '" data-day="' + day + '">' +
-                '<div class="day-title">' + plan.name + '</div>' +
-                '<div class="day-tags">' + plan.tags.map(t => '<span class="day-tag ' + TAG_CLASSES[t] + '">' + t + '</span>').join('') + '</div>' +
+            return '<div class="' + (isActive ? 'block' : 'hidden') + ' max-w-2xl mx-auto" data-day="' + day + '">' +
+                '<h2 class="text-base md:text-lg font-bold uppercase tracking-wide mb-1">' + plan.name + '</h2>' +
+                '<div class="flex gap-1.5 mb-3">' +
+                    plan.tags.map(t => '<span class="text-[0.5rem] md:text-[0.55rem] px-2 py-0.5 rounded-full uppercase tracking-wide font-semibold ' + TAG_CLASSES[t] + '">' + t + '</span>').join('') +
+                '</div>' +
                 plan.sessions.map(session => renderSession(day, session)).join('') +
             '</div>';
         }).join('');
 
+        // History
         const historyPanel = document.getElementById('historyPanel');
-        historyPanel.className = 'history-panel' + (showHistory ? ' active' : '');
+        historyPanel.classList.toggle('hidden', !showHistory);
         if (showHistory) renderHistory();
     }
 
@@ -1546,30 +707,31 @@
         let fieldsHtml = '';
 
         if (session.stations) {
-            fieldsHtml = '<div class="station-log">' +
+            fieldsHtml = '<div class="mt-3">' +
                 session.stations.map(st => {
                     const val = sData[st.id] || '';
                     const spec = st.isRun ? '' : getSpec(st.id);
                     const pv = prev ? prev[st.id] : null;
-                    return '<div class="station-log-item">' +
-                        '<div class="station-label ' + (st.isRun ? 'run-label' : '') + '">' +
+                    return '<div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 py-2.5 border-b border-[#1a1a1a] last:border-0">' +
+                        '<div class="font-semibold text-sm md:text-[0.7rem] flex items-baseline gap-1.5 md:min-w-[120px] md:flex-shrink-0 ' + (st.isRun ? 'text-hyrox' : 'text-gray-500') + '">' +
                             st.name +
-                            (spec ? '<span class="spec">' + spec + '</span>' : '') +
+                            (spec ? '<span class="text-gray-600 text-[0.65rem] md:text-[0.55rem] font-semibold">' + spec + '</span>' : '') +
                         '</div>' +
                         prevBadge(pv) +
-                        '<input class="station-input" type="text" placeholder="' + st.placeholder + '" value="' + escHtml(val) + '"' +
+                        '<input class="bg-dim border border-[#2a2a2a] text-gray-400 p-3 md:py-1 md:px-2 rounded-lg md:rounded-md text-base md:text-[0.7rem] outline-none w-full md:w-[90px] focus:border-gold transition-colors placeholder:text-[#444]" type="text" placeholder="' + st.placeholder + '" value="' + escHtml(val) + '"' +
                             ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + st.id + '\',this.value)">' +
                     '</div>';
                 }).join('') +
             '</div>';
         } else if (session.fields && session.fields.length > 0) {
-            fieldsHtml = '<div class="log-fields">' +
+            fieldsHtml = '<div class="mt-3 grid grid-cols-2 gap-2">' +
                 session.fields.map(f => {
                     const val = sData[f.id] || '';
                     const pv = prev ? prev[f.id] : null;
-                    return '<div class="log-field">' +
-                        '<label>' + f.label + '</label>' +
+                    return '<div class="flex flex-col gap-0.5">' +
+                        '<label class="text-[0.6rem] md:text-[0.55rem] uppercase tracking-wide text-gray-600 font-semibold">' + f.label + '</label>' +
                         '<input type="text" placeholder="' + f.placeholder + '" value="' + escHtml(val) + '"' +
+                            ' class="bg-dim border border-[#2a2a2a] text-gray-400 p-3 md:py-1 md:px-2 rounded-lg md:rounded-md text-base md:text-xs outline-none focus:border-gold transition-colors placeholder:text-[#444]"' +
                             ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'' + f.id + '\',this.value)">' +
                         prevBadge(pv) +
                     '</div>';
@@ -1578,18 +740,21 @@
         }
 
         const notes = sData.notes || '';
-        const notesHtml = '<div class="log-fields"><div class="log-field notes-field">' +
-            '<label>Notes</label>' +
-            '<textarea placeholder="How did it feel?" oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'notes\',this.value)">' + escHtml(notes) + '</textarea>' +
+        const notesHtml = '<div class="mt-3"><div class="flex flex-col gap-0.5">' +
+            '<label class="text-[0.6rem] md:text-[0.55rem] uppercase tracking-wide text-gray-600 font-semibold">Notes</label>' +
+            '<textarea placeholder="How did it feel?" class="w-full bg-dim border border-[#2a2a2a] text-gray-400 p-3 md:py-1 md:px-2 rounded-lg md:rounded-md text-base md:text-xs outline-none focus:border-gold transition-colors placeholder:text-[#444] resize-y min-h-[50px] md:min-h-[36px]"' +
+                ' oninput="onInput(\'' + day + '\',\'' + session.id + '\',\'notes\',this.value)">' + escHtml(notes) + '</textarea>' +
         '</div></div>';
 
-        return '<div class="session-card ' + (completed ? 'completed' : '') + '">' +
-            '<div class="session-header">' +
-                '<div class="session-check ' + (completed ? 'checked' : '') + '" onclick="toggleComplete(\'' + day + '\',\'' + session.id + '\')"></div>' +
-                '<div class="session-info">' +
-                    (session.time ? '<div class="session-time-label">' + session.time + '</div>' : '') +
-                    '<div class="session-name">' + session.name + '</div>' +
-                    '<div class="session-desc">' + session.desc + '</div>' +
+        return '<div class="bg-surface border rounded-xl p-3.5 md:p-4 mb-2.5 ' + (completed ? 'border-emerald-400/30' : 'border-[#222]') + '">' +
+            '<div class="flex items-center gap-2.5 mb-2">' +
+                '<div class="w-8 h-8 md:w-5 md:h-5 rounded-full border-2 cursor-pointer flex items-center justify-center flex-shrink-0 transition-all text-xs font-bold ' +
+                    (completed ? 'bg-emerald-400 border-emerald-400 text-dark' : 'border-[#333]') +
+                '" onclick="toggleComplete(\'' + day + '\',\'' + session.id + '\')">' + (completed ? '\u2713' : '') + '</div>' +
+                '<div class="flex-1 min-w-0">' +
+                    (session.time ? '<div class="text-[0.6rem] uppercase tracking-wide text-gray-600">' + session.time + '</div>' : '') +
+                    '<div class="text-[0.95rem] md:text-sm font-semibold text-gray-400">' + session.name + '</div>' +
+                    '<div class="text-xs md:text-[0.65rem] text-gray-600 mt-0.5">' + session.desc + '</div>' +
                 '</div>' +
             '</div>' +
             fieldsHtml +
@@ -1602,7 +767,6 @@
     }
 
     function getPrevSessionData(day, sessionId) {
-        // Find the most recent previous week that has data for this day+session
         const weeks = Object.keys(data).sort().reverse();
         for (const wk of weeks) {
             if (wk >= currentWeek) continue;
@@ -1615,7 +779,7 @@
 
     function prevBadge(val) {
         if (!val) return '';
-        return '<span class="prev-val">Last: ' + escHtml(val) + '</span>';
+        return '<span class="text-[0.5rem] text-gold/60 font-semibold whitespace-nowrap">Last: ' + escHtml(val) + '</span>';
     }
 
     function renderHistory() {
@@ -1623,21 +787,21 @@
         const weeks = Object.keys(data).sort().reverse();
 
         if (weeks.length === 0) {
-            list.innerHTML = '<div style="text-align:center;color:#444;font-size:0.75rem;padding:40px 0;">No data yet. Start logging!</div>';
+            list.innerHTML = '<div class="text-center text-gray-700 text-xs py-10">No data yet. Start logging!</div>';
             return;
         }
 
         list.innerHTML = weeks.map(weekId => {
             const weekData = data[weekId];
             const dots = DAYS.map(day => {
-                if (!weekData[day]) return '<div class="history-dot"></div>';
+                if (!weekData[day]) return '<div class="w-2 h-2 rounded-full bg-[#222]"></div>';
                 const plan = PLAN[day];
                 let done = 0;
                 plan.sessions.forEach(s => {
                     if (weekData[day][s.id] && weekData[day][s.id].completed) done++;
                 });
-                const cls = done === plan.sessions.length ? 'done' : done > 0 ? 'partial' : '';
-                return '<div class="history-dot ' + cls + '"></div>';
+                const c = done === plan.sessions.length ? 'bg-emerald-400' : done > 0 ? 'bg-gold' : 'bg-[#222]';
+                return '<div class="w-2 h-2 rounded-full ' + c + '"></div>';
             }).join('');
 
             const totalSessions = DAYS.reduce((sum, d) => sum + PLAN[d].sessions.length, 0);
@@ -1650,12 +814,12 @@
                 }
             });
 
-            return '<div class="history-week" onclick="jumpToWeek(\'' + weekId + '\')">' +
-                '<div class="history-week-header">' +
-                    '<div class="history-week-label">' + getWeekDisplay(weekId) + (isCurrentWeek(weekId) ? ' <span style="color:#f5c842;font-size:0.5rem;">CURRENT</span>' : '') + '</div>' +
-                    '<div class="history-completion">' + completedSessions + '/' + totalSessions + ' sessions</div>' +
+            return '<div class="bg-surface border border-[#222] rounded-xl p-3.5 mb-2 cursor-pointer transition-colors hover:border-[#333]" onclick="jumpToWeek(\'' + weekId + '\')">' +
+                '<div class="flex flex-col md:flex-row justify-between md:items-center gap-1">' +
+                    '<div class="text-xs font-semibold">' + getWeekDisplay(weekId) + (isCurrentWeek(weekId) ? ' <span class="text-gold text-[0.5rem]">CURRENT</span>' : '') + '</div>' +
+                    '<div class="text-[0.6rem] text-emerald-400">' + completedSessions + '/' + totalSessions + ' sessions</div>' +
                 '</div>' +
-                '<div class="history-days">' + dots + '</div>' +
+                '<div class="flex gap-1 mt-2">' + dots + '</div>' +
             '</div>';
         }).join('');
     }
@@ -1670,16 +834,14 @@
         render();
     }
 
-    function toggleHistory() {
-        showHistory = !showHistory;
-        render();
-    }
-
     function toggleMobileSettings() {
         const drawer = document.getElementById('settingsDrawer');
         const btn = document.querySelector('.mobile-settings-btn');
         drawer.classList.toggle('hidden');
-        btn.classList.toggle('active');
+        btn.classList.toggle('border-gold');
+        btn.classList.toggle('text-gold');
+        btn.classList.toggle('border-[#333]');
+        btn.classList.toggle('text-gray-500');
     }
 
     function jumpToWeek(weekId) {
@@ -1700,9 +862,14 @@
         a.click();
         URL.revokeObjectURL(url);
         const btn = document.getElementById('exportBtn');
-        btn.classList.add('success');
+        btn.classList.add('border-emerald-400', 'text-emerald-400');
+        btn.classList.remove('border-[#2a2a2a]', 'text-gray-500');
         btn.textContent = 'Exported!';
-        setTimeout(() => { btn.classList.remove('success'); btn.textContent = 'Export'; }, 2000);
+        setTimeout(() => {
+            btn.classList.remove('border-emerald-400', 'text-emerald-400');
+            btn.classList.add('border-[#2a2a2a]', 'text-gray-500');
+            btn.textContent = 'Export';
+        }, 2000);
     }
 
     async function importData(event) {
@@ -1730,7 +897,6 @@
 
                 localStorage.setItem('hyrox-data', JSON.stringify(data));
 
-                // Sync all imported weeks to cloud
                 if (isCloud) {
                     for (const weekId of Object.keys(imported)) {
                         await syncWeekToCloud(weekId);
@@ -1759,7 +925,6 @@
     }
 
     async function initApp() {
-        // Initialize Supabase client
         try {
             sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         } catch (err) {
@@ -1767,7 +932,6 @@
             return;
         }
 
-        // Check for existing session
         showOverlay('loading');
         const { data: sessionData } = await sb.auth.getSession();
 
@@ -1781,7 +945,6 @@
             showOverlay('auth');
         }
 
-        // Listen for auth changes (e.g. token refresh)
         sb.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
                 currentUser = null;
@@ -1790,7 +953,6 @@
         });
     }
 
-    // Start
     initApp();
     </script>
 </body>
